@@ -1,0 +1,186 @@
+"""
+InsightLoop AI Service — Schemas for POST /summary
+===================================================
+Pydantic models for the report summary generation endpoint.
+
+Called by Node backend when a business owner generates a report.
+The returned structured data is formatted into a PDF by Node.
+"""
+
+from typing import Optional
+from pydantic import BaseModel, Field
+
+
+# ── Request Models ────────────────────────────────────────────────────────────
+
+
+class SummaryRequest(BaseModel):
+    """
+    Request body for POST /summary.
+
+    Specifies which form to summarize and the date range to cover.
+    FastAPI fetches all processed responses (ai_analysis.status = "done")
+    for this form within the date range from MongoDB.
+    """
+
+    business_id: str = Field(
+        ...,
+        description="Business UUID. Used for tenant isolation when querying MongoDB.",
+    )
+    form_id: str = Field(
+        ...,
+        description="Form UUID. Summary is generated for this form's responses only.",
+    )
+    date_from: str = Field(
+        ...,
+        description="Start of the date range (inclusive). Format: 'YYYY-MM-DD'.",
+    )
+    date_to: str = Field(
+        ...,
+        description="End of the date range (inclusive). Format: 'YYYY-MM-DD'.",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "business_id": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+                "form_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+                "date_from": "2026-04-01",
+                "date_to": "2026-04-30",
+            }
+        }
+    }
+
+
+# ── Response Models ───────────────────────────────────────────────────────────
+
+
+class SentimentBreakdown(BaseModel):
+    """Count of responses categorized by overall sentiment."""
+
+    positive: int = Field(default=0, description="Number of responses with positive overall sentiment.")
+    neutral: int = Field(default=0, description="Number of responses with neutral overall sentiment.")
+    negative: int = Field(default=0, description="Number of responses with negative overall sentiment.")
+
+
+class AvgRating(BaseModel):
+    """Average rating for a single rating-type question."""
+
+    label: str = Field(
+        ...,
+        description="Question text (e.g., 'How was your overall experience?').",
+    )
+    avg: float = Field(
+        ...,
+        ge=1.0,
+        le=5.0,
+        description="Average rating score (1.0–5.0).",
+    )
+
+
+class SummaryResponse(BaseModel):
+    """
+    Response body for POST /summary.
+
+    Structured summary of all feedback for a form within the requested date range.
+    Node backend formats this into a PDF report for the business owner.
+
+    Data sources:
+        - MongoDB: response counts, sentiment, urgency, ai_analysis fields
+        - MySQL: form title (from feedback_forms), question labels (from questions)
+        - LLM: top_positives, top_complaints, recommendations (generated text)
+    """
+
+    form_title: str = Field(
+        ...,
+        description="Title of the feedback form (from MySQL feedback_forms.title).",
+    )
+    period: str = Field(
+        ...,
+        description="Human-readable period string (e.g., 'April 2026', 'Q1 2026').",
+    )
+    total_responses: int = Field(
+        ...,
+        description="Total number of fully processed responses in the date range.",
+    )
+    sentiment_breakdown: SentimentBreakdown = Field(
+        ...,
+        description="Count of positive, neutral, and negative responses.",
+    )
+    avg_ratings: dict[str, AvgRating] = Field(
+        default_factory=dict,
+        description=(
+            "Average rating per rating-type question. "
+            "Keyed by question_id. Empty if form has no rating questions."
+        ),
+    )
+    recommend_yes_percent: Optional[float] = Field(
+        default=None,
+        description=(
+            "Percentage of yes/no answers that were 'Yes' (0.0–100.0). "
+            "None if the form has no yes/no question."
+        ),
+    )
+    top_positives: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Top 2–3 positive themes consistently praised across responses. "
+            "LLM-generated from aggregated compliment intents and topics."
+        ),
+    )
+    top_complaints: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Top 2–3 complaints most frequently mentioned across responses. "
+            "LLM-generated from complaint intents and dominant topics."
+        ),
+    )
+    urgent_issues: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Issues from responses with urgency='high' that need immediate attention. "
+            "May be empty if no high-urgency responses exist in the period."
+        ),
+    )
+    recommendations: list[str] = Field(
+        default_factory=list,
+        description=(
+            "2–3 actionable recommendations generated by the LLM based on the full "
+            "feedback analysis. Specific and business-relevant."
+        ),
+    )
+    generated_at: str = Field(
+        ...,
+        description="ISO 8601 timestamp of when this summary was generated.",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "form_title": "Dining Experience Feedback",
+                "period": "April 2026",
+                "total_responses": 142,
+                "sentiment_breakdown": {"positive": 89, "neutral": 31, "negative": 22},
+                "avg_ratings": {
+                    "uuid-q1": {"label": "Overall Experience", "avg": 3.8},
+                    "uuid-q2": {"label": "Food Quality", "avg": 3.2},
+                    "uuid-q3": {"label": "Service Speed", "avg": 2.9},
+                },
+                "recommend_yes_percent": 71.8,
+                "top_positives": [
+                    "Ambience consistently praised across responses",
+                    "Staff friendliness mentioned positively in 34 responses",
+                ],
+                "top_complaints": [
+                    "Food arriving cold — mentioned in 18 responses",
+                    "Long wait times during weekends — mentioned in 14 responses",
+                ],
+                "urgent_issues": ["3 customers reported billing discrepancies"],
+                "recommendations": [
+                    "Consider temperature checks before food is served",
+                    "Add weekend staffing to reduce wait times",
+                ],
+                "generated_at": "2026-04-30T23:59:00Z",
+            }
+        }
+    }

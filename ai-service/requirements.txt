@@ -1,0 +1,28 @@
+# ── Framework ─────────────────────────────────────────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+
+# ── LangChain / LangGraph ─────────────────────────────────────────────────────
+langchain==0.3.7
+langchain-google-genai==2.0.7       # Gemini LLM calls + Gemini embeddings
+langgraph==0.2.56
+langsmith==0.1.140
+
+# ── Vector Store ──────────────────────────────────────────────────────────────
+chromadb==0.5.23                    # Local persistent store (switch to Qdrant on deploy)
+
+# ── Database Drivers ──────────────────────────────────────────────────────────
+motor==3.5.0                        # Async MongoDB driver
+aiomysql==0.2.0                     # Async MySQL driver
+
+# ── Validation & Config ───────────────────────────────────────────────────────
+pydantic==2.8.0
+pydantic-settings==2.4.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv==1.0.0
+httpx==0.27.0                       # Async HTTP (for any internal calls)
+APScheduler==3.10.4                 # Retry cron job scheduler
+
+# ── Data Processing (Phase 3 — Quantitative Chat Tool) ────────────────────────
+pandas==2.2.0
