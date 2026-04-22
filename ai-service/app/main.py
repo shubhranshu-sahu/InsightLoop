@@ -46,35 +46,41 @@ async def lifespan(app: FastAPI):
     # ── Startup ───────────────────────────────────────────────────────────────
     print("[InsightLoop AI] Starting up...")
 
-    # TODO: Initialize MongoDB connection
-    # from app.db.mongo import init_mongo
-    # await init_mongo()
+    # MongoDB (required — pipeline writes ai_analysis after every /analyze call)
+    from app.db.mongo import init_mongo, close_mongo
+    await init_mongo()
 
-    # TODO: Initialize MySQL connection pool
-    # from app.db.mysql import init_mysql
-    # await init_mysql()
+    # MySQL (optional — only needed for alert checker)
+    # NotImplementedError is expected until MySQL is configured.
+    from app.db.mysql import init_mysql, close_mysql
+    try:
+        await init_mysql()
+    except NotImplementedError:
+        print("[MySQL] Not configured — alert checker disabled.")
+    except Exception as exc:
+        print(f"[MySQL] Connection failed (non-critical): {exc}")
 
-    # TODO: Load / initialize ChromaDB vector store
-    # from app.vector.store import init_vector_store
-    # await init_vector_store()
+    # TODO: Load / initialize ChromaDB vector store on startup (optional warm-up)
+    # from app.vector.store import get_vector_store
+    # get_vector_store()   # Pre-loads the store so the first /analyze is fast
 
-    # TODO: Run retry worker on startup
+    # TODO: Run retry worker on startup (Phase 4)
     # from app.workers.retry import retry_pending_responses
     # await retry_pending_responses()
 
-    # TODO: Start APScheduler for periodic retry
+    # TODO: Start APScheduler for periodic retry (Phase 4)
     # scheduler.add_job(retry_pending_responses, "interval", minutes=30)
     # scheduler.start()
 
-    print(f"[InsightLoop AI] Ready — LLM: {settings.GEMINI_LLM_MODEL} | Vector Store: Chroma")
+    print(f"[InsightLoop AI] Ready — LLM: {settings.GEMINI_LLM_MODEL} | Vector Store: {settings.VECTOR_STORE_BACKEND}")
 
     yield  # ← Application runs here
 
     # ── Shutdown ──────────────────────────────────────────────────────────────
     print("[InsightLoop AI] Shutting down...")
-
-    # TODO: Close MongoDB / MySQL connections
-    # TODO: Shutdown APScheduler
+    await close_mongo()
+    await close_mysql()
+    # TODO: Shutdown APScheduler (Phase 4)
 
 
 # ── Application Instance ──────────────────────────────────────────────────────

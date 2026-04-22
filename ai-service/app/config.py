@@ -121,19 +121,44 @@ class Settings(BaseSettings):
         description="MySQL database name.",
     )
 
-    # ── Vector Store (ChromaDB) ───────────────────────────────────────────────
+    # ── Vector Store ──────────────────────────────────────────────────────────
+    VECTOR_STORE_BACKEND: str = Field(
+        default="chroma",
+        description=(
+            "Which vector store backend to use. "
+            "'chroma' = local ChromaDB (dev). "
+            "'qdrant' = cloud Qdrant (deploy). "
+            "Change this + set QDRANT_* vars to migrate — no code changes needed."
+        ),
+    )
+
+    # ChromaDB (used when VECTOR_STORE_BACKEND=chroma)
     VECTOR_STORE_PATH: str = Field(
         default="./data/vectorstore",
         description=(
             "Local filesystem path where ChromaDB persists its index files. "
-            "This directory is gitignored. On deployment, switch to Qdrant "
-            "by updating app/vector/store.py."
+            "Gitignored. Ignored when VECTOR_STORE_BACKEND=qdrant."
         ),
     )
     CHROMA_COLLECTION_NAME: str = Field(
         default="feedback_responses",
-        description="ChromaDB collection name for storing feedback response embeddings.",
+        description="ChromaDB collection name for feedback response embeddings.",
     )
+
+    # Qdrant (used when VECTOR_STORE_BACKEND=qdrant)
+    QDRANT_URL: str = Field(
+        default="",
+        description="Qdrant cluster URL. Required when VECTOR_STORE_BACKEND=qdrant.",
+    )
+    QDRANT_API_KEY: str = Field(
+        default="",
+        description="Qdrant API key. Required when VECTOR_STORE_BACKEND=qdrant.",
+    )
+    QDRANT_COLLECTION_NAME: str = Field(
+        default="feedback_responses",
+        description="Qdrant collection name. Mirrors CHROMA_COLLECTION_NAME by default.",
+    )
+
 
     # ── Alert Thresholds ──────────────────────────────────────────────────────
     ALERT_HIGH_URGENCY_THRESHOLD: int = Field(

@@ -5,14 +5,16 @@ uvicorn[standard]==0.30.0
 # ── LangChain / LangGraph ─────────────────────────────────────────────────────
 langchain==0.3.7
 langchain-google-genai==2.0.7       # Gemini LLM calls + Gemini embeddings
+langchain-chroma==0.1.4             # LangChain wrapper for ChromaDB (current backend)
 langgraph==0.2.56
 langsmith==0.1.140
+# For Qdrant (install when deploying): langchain-qdrant==0.2.0  qdrant-client==1.9.0
 
 # ── Vector Store ──────────────────────────────────────────────────────────────
 chromadb==0.5.23                    # Local persistent store (switch to Qdrant on deploy)
 
 # ── Database Drivers ──────────────────────────────────────────────────────────
-motor==3.5.0                        # Async MongoDB driver
+motor==3.7.1                        # Async MongoDB driver
 aiomysql==0.2.0                     # Async MySQL driver
 
 # ── Validation & Config ───────────────────────────────────────────────────────

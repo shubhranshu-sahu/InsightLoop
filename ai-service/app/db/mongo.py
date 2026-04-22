@@ -1,47 +1,95 @@
 """
-InsightLoop AI Service — MongoDB Async Connection (Stub)
-========================================================
-Manages the async MongoDB connection using motor.
-Same MongoDB instance as the Node backend — shared database, separate concerns.
+InsightLoop AI Service — MongoDB Async Connection
+==================================================
+Manages the async MongoDB connection using motor (Motor AsyncIO).
 
-FastAPI reads: responses.answers (to process)
-FastAPI writes: responses.ai_analysis (after processing)
-FastAPI writes: ai_queries (query logs)
+This service shares the same MongoDB instance as the Node backend.
+Division of ownership:
+    Node backend writes:  responses.answers, responses.ai_analysis (initial stub)
+    FastAPI writes:       responses.ai_analysis ($set after processing)
+    FastAPI writes:       ai_queries (query logs, Phase 3)
+    FastAPI reads:        responses (to find pending/failed for retry worker)
 
-Connection is initialized once on startup via lifespan and reused.
+Connection lifecycle:
+    - init_mongo()  called once on FastAPI startup (lifespan)
+    - get_db()      called per-request to get the database handle
+    - close_mongo() called once on FastAPI shutdown (lifespan)
+
+The Motor client maintains an internal connection pool — a single client
+instance is sufficient for the entire application lifetime.
+
+Usage:
+    from app.db.mongo import get_db
+    db = await get_db()
+    doc = await db.responses.find_one({"response_id": response_id})
+    await db.responses.update_one({"response_id": rid}, {"$set": {...}})
 """
 
-# TODO: Implement motor async MongoDB connection
-# from motor.motor_asyncio import AsyncIOMotorClient
-# from app.config import settings
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-_client = None
-_db = None
+from app.config import settings
+
+# Module-level Motor client — initialized once, never replaced
+_client: AsyncIOMotorClient | None = None
 
 
-async def get_db():
+async def init_mongo() -> None:
     """
-    Returns the MongoDB database handle.
+    Initialize the Motor async MongoDB client and verify the connection.
 
-    On first call (from lifespan startup), creates the Motor client
-    and connects to the database. Subsequent calls return the cached database.
+    Called once from the FastAPI lifespan startup handler in main.py.
+    Raises on connection failure so the app fails fast if MongoDB is unreachable.
+
+    Raises:
+        Exception: If MongoDB is unreachable or auth fails.
+    """
+    global _client
+    _client = AsyncIOMotorClient(settings.MONGO_URI)
+
+    # Verify connection by pinging the admin database
+    await _client.admin.command("ping")
+    print(f"[MongoDB] Connected  →  {settings.MONGO_URI} / {settings.MONGO_DB_NAME}")
+
+
+async def get_db() -> AsyncIOMotorDatabase:
+    """
+    Return the Motor database handle for the insightloop database.
+
+    This is the primary entry point for all MongoDB operations in the service.
+    The client is created once; the database handle is a lightweight object
+    derived from the client — calling this function is essentially free.
 
     Returns:
-        AsyncIOMotorDatabase: The insightloop MongoDB database handle.
+        AsyncIOMotorDatabase: Handle to the configured MongoDB database.
+
+    Raises:
+        RuntimeError: If called before init_mongo() (i.e., before startup).
 
     Usage:
         db = await get_db()
-        doc = await db.responses.find_one({"response_id": response_id})
-
-    TODO: Implement.
+        result = await db.responses.find_one({"response_id": "uuid-123"})
+        await db.responses.update_one(
+            {"response_id": "uuid-123"},
+            {"$set": {"ai_analysis.status": "done"}}
+        )
     """
-    raise NotImplementedError("MongoDB connection not yet implemented.")
+    if _client is None:
+        raise RuntimeError(
+            "MongoDB client is not initialized. "
+            "Ensure init_mongo() is called in the FastAPI lifespan startup."
+        )
+    return _client[settings.MONGO_DB_NAME]
 
 
-async def close_db():
+async def close_mongo() -> None:
     """
-    Closes the MongoDB connection. Called on application shutdown.
+    Close the Motor MongoDB client and release the connection pool.
 
-    TODO: Implement.
+    Called from the FastAPI lifespan shutdown handler in main.py.
+    Safe to call even if init_mongo() was never called.
     """
-    raise NotImplementedError("MongoDB close not yet implemented.")
+    global _client
+    if _client is not None:
+        _client.close()
+        _client = None
+        print("[MongoDB] Connection closed.")

@@ -1,0 +1,138 @@
+# InsightLoop — MongoDB Seed Documents
+# ======================================
+# These documents simulate what Purvi's Node backend inserts into the
+# MongoDB `responses` collection when a customer submits a feedback form.
+#
+# HOW TO INSERT:
+#   Option A — MongoDB Compass:
+#     1. Open Compass → connect to mongodb://localhost:27017
+#     2. Open database: insightloop → collection: responses
+#        (create both if they don't exist)
+#     3. Click "Insert Document" → switch to JSON view → paste each doc below
+#
+#   Option B — mongosh (terminal):
+#     mongosh
+#     > use insightloop
+#     > db.responses.insertMany([...paste all three docs...])
+#
+# FORM USED:
+#   form_id:     "form-dining-abc123"
+#   business_id: "biz-spice-garden-xyz"
+#   All three docs use the same form/business to test pipeline + alerts.
+#
+# TESTING:
+#   After inserting, POST each response_id to /analyze
+#   Docs 1 + 3 should yield urgency: "high"
+#   Doc 2 should yield urgency: "low"
+# ======================================
+
+
+# ── Document 1: Mixed feedback — High urgency candidate ──────────────────────
+# Expected after /analyze: overall_sentiment=negative, urgency=high, is_complaint=true
+
+{
+  "response_id": "resp-001-dining-2026",
+  "form_id": "form-dining-abc123",
+  "business_id": "biz-spice-garden-xyz",
+  "submitted_at": { "$date": "2026-04-20T13:45:00Z" },
+  "answers": {
+    "q1-overall":   { "label": "How was your overall experience?",   "type": "rating", "value": 2 },
+    "q2-food":      { "label": "Rate the food quality",              "type": "rating", "value": 1 },
+    "q3-service":   { "label": "Rate the service speed",             "type": "rating", "value": 2 },
+    "q4-improve":   {
+      "label": "What could we do better?",
+      "type": "text",
+      "value": "The biryani arrived completely cold and we waited over 45 minutes. Very disappointing for the price."
+    },
+    "q5-enjoy":     {
+      "label": "What did you enjoy most?",
+      "type": "text",
+      "value": "The restaurant ambience was pleasant and the staff were polite."
+    },
+    "q6-recommend": { "label": "Would you recommend us to a friend?", "type": "yesno", "value": false }
+  },
+  "ai_analysis": {
+    "status": "pending",
+    "processed_at": null,
+    "retry_count": 0
+  }
+}
+
+
+# ── Document 2: Positive feedback — Low urgency ───────────────────────────────
+# Expected after /analyze: overall_sentiment=positive, urgency=low, is_complaint=false
+
+{
+  "response_id": "resp-002-dining-2026",
+  "form_id": "form-dining-abc123",
+  "business_id": "biz-spice-garden-xyz",
+  "submitted_at": { "$date": "2026-04-21T19:15:00Z" },
+  "answers": {
+    "q1-overall":   { "label": "How was your overall experience?",   "type": "rating", "value": 5 },
+    "q2-food":      { "label": "Rate the food quality",              "type": "rating", "value": 5 },
+    "q3-service":   { "label": "Rate the service speed",             "type": "rating", "value": 4 },
+    "q4-improve":   {
+      "label": "What could we do better?",
+      "type": "text",
+      "value": "Maybe add a few more vegetarian options to the menu, but everything else was perfect."
+    },
+    "q5-enjoy":     {
+      "label": "What did you enjoy most?",
+      "type": "text",
+      "value": "The paneer tikka was absolutely delicious and the staff made us feel very welcome. Will definitely come back."
+    },
+    "q6-recommend": { "label": "Would you recommend us to a friend?", "type": "yesno", "value": true }
+  },
+  "ai_analysis": {
+    "status": "pending",
+    "processed_at": null,
+    "retry_count": 0
+  }
+}
+
+
+# ── Document 3: Strong complaint — High urgency ───────────────────────────────
+# Expected after /analyze: overall_sentiment=negative, urgency=high, is_complaint=true
+# Combined with doc 1: two high-urgency in window — will test alert threshold
+
+{
+  "response_id": "resp-003-dining-2026",
+  "form_id": "form-dining-abc123",
+  "business_id": "biz-spice-garden-xyz",
+  "submitted_at": { "$date": "2026-04-22T12:30:00Z" },
+  "answers": {
+    "q1-overall":   { "label": "How was your overall experience?",   "type": "rating", "value": 1 },
+    "q2-food":      { "label": "Rate the food quality",              "type": "rating", "value": 2 },
+    "q3-service":   { "label": "Rate the service speed",             "type": "rating", "value": 1 },
+    "q4-improve":   {
+      "label": "What could we do better?",
+      "type": "text",
+      "value": "We found a hair in the dal makhani. The food was undercooked and the waiter was rude when we complained. Completely unacceptable."
+    },
+    "q5-enjoy":     {
+      "label": "What did you enjoy most?",
+      "type": "text",
+      "value": "Nothing was enjoyable about this visit unfortunately."
+    },
+    "q6-recommend": { "label": "Would you recommend us to a friend?", "type": "yesno", "value": false }
+  },
+  "ai_analysis": {
+    "status": "pending",
+    "processed_at": null,
+    "retry_count": 0
+  }
+}
+
+
+# ── Postman test body for /analyze (send separately for each doc) ─────────────
+# Copy the answers block from each doc above into the "answers" field below.
+# Make sure to send with header: X-Internal-Secret: your_very_secret_key_here
+
+# POST http://localhost:8000/analyze
+# {
+#   "response_id": "resp-001-dining-2026",
+#   "form_id": "form-dining-abc123",
+#   "business_id": "biz-spice-garden-xyz",
+#   "submitted_at": "2026-04-20T13:45:00Z",
+#   "answers": { ...copy from doc above... }
+# }

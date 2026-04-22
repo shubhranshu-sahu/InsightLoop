@@ -1,34 +1,48 @@
 """
 InsightLoop AI Service — Node 4: embed_store_node
 ==================================================
-LangGraph pipeline node that embeds the processed feedback response and
-persists it to ChromaDB and MongoDB.
+LangGraph pipeline node that persists the processed feedback response
+to the vector store (ChromaDB) and updates MongoDB.
 
-Responsibility:
+This is the final node in the pipeline. It runs after all analysis and
+summarization is complete, and its job is to make the results durable.
+
+Responsibilities:
     1. Build a rich natural-language prose document from the full state
-    2. Embed it using the Gemini embedding model
-    3. Store it in ChromaDB with metadata for filtered retrieval
-    4. Update the MongoDB `responses` document (ai_analysis.$set)
-    5. Set state["embedding_stored"] = True
+    2. Store it in ChromaDB (via LangChain VectorStore) with metadata
+    3. Update MongoDB responses.ai_analysis via $set (status → "done")
+    4. Set state["embedding_stored"] = True
 
-Input  (reads from state):
-    All fields — builds a comprehensive document from the full state.
+Input  (reads from state): all fields — uses everything for the document
+Output (writes to state):  state["embedding_stored"]
 
-Output (writes to state):
-    state["embedding_stored"]   — True on success, False on skip/failure
+LLM call count: 0
 
-LLM call count: 0 (uses embedding model, not generative LLM)
+Vector document design:
+    The document is natural-language prose (not JSON) so that semantic
+    similarity search works correctly. When a business owner asks
+    "complaints about cold food", the model retrieves based on actual
+    meaning, not keyword matching.
 
-Dev mode:
-    ChromaDB and MongoDB calls are skipped in development.
-    The node logs a message and sets embedding_stored = False.
-    To enable, set DEV_SKIP_STORAGE = False in config or implement the
-    actual DB calls once MongoDB / ChromaDB are set up.
+Metadata stored with each document in ChromaDB:
+    response_id, form_id, business_id, submitted_at,
+    overall_sentiment, urgency, is_complaint (as "true"/"false"),
+    dominant_topic
+
+    → response_id in metadata = source citation link for RAG chat (Phase 3)
+
+MongoDB $set (ai_analysis block only — never touches answers):
+    status, overall_sentiment, sentiment_score, urgency,
+    is_complaint, dominant_topic, per_text_analysis, summary, processed_at
 """
 
 from datetime import datetime, timezone
 
+from langchain_core.documents import Document
+
+from app.db.mongo import get_db
 from app.pipeline.state import FeedbackState
+from app.vector.store import get_vector_store
 
 
 # ── Document Builder ──────────────────────────────────────────────────────────
@@ -36,19 +50,19 @@ from app.pipeline.state import FeedbackState
 
 def _build_vector_document(state: FeedbackState) -> str:
     """
-    Build a rich natural-language prose document for embedding.
+    Build a natural-language prose document from the full pipeline state.
 
-    Why prose (not JSON)?
-        The embedding model converts text to a vector. Natural language prose
-        retrieves better semantically than raw JSON. When a business owner asks
-        "complaints about cold food", the semantic similarity between that query
-        and "biryani arrived cold" in this document drives accurate retrieval.
+    Why prose and not JSON?
+        Embedding models convert text to semantic vectors. Natural language
+        prose creates better embeddings than raw JSON because it mimics
+        the language a user would use when searching (e.g., "cold food complaint")
+        — which semantically matches "biryani arrived cold" in the document.
 
     Args:
-        state: Full FeedbackState after all previous nodes have run.
+        state: Full FeedbackState after all nodes have run.
 
     Returns:
-        str: Natural-language document ready for embedding.
+        str: Multi-line prose document ready to be embedded and stored.
     """
     answers = state["answers"]
     text_analysis = state.get("per_text_analysis", {})
@@ -72,24 +86,24 @@ def _build_vector_document(state: FeedbackState) -> str:
 
     lines.append("")
 
-    # Text analysis block
+    # Text answers with analysis annotations
     for qid, analysis in text_analysis.items():
-        label = analysis.get("label", "")
-        raw = analysis.get("raw_answer", "")
-        topics_str = ", ".join(analysis.get("topics", []))
-        phrases_str = ", ".join(analysis.get("key_phrases", []))
-        intent = analysis.get("intent", "")
+        label     = analysis.get("label", "")
+        raw       = analysis.get("raw_answer", "")
+        topics    = ", ".join(analysis.get("topics", []))
+        phrases   = ", ".join(analysis.get("key_phrases", []))
+        intent    = analysis.get("intent", "")
         sentiment = analysis.get("sentiment", "")
 
         lines.append(f"Q: {label}")
         lines.append(f'A: "{raw}"')
         lines.append(
-            f"→ Sentiment: {sentiment} | Topics: {topics_str} | "
-            f"Key phrases: {phrases_str} | Intent: {intent}"
+            f"→ Sentiment: {sentiment} | Topics: {topics} | "
+            f"Key phrases: {phrases} | Intent: {intent}"
         )
         lines.append("")
 
-    # Summary line
+    # Overall summary line
     lines.append(
         f"Overall: {state.get('overall_sentiment', '')} | "
         f"Urgency: {state.get('urgency', '')} | "
@@ -110,88 +124,72 @@ async def embed_store_node(state: FeedbackState) -> FeedbackState:
     """
     LangGraph Node 4 — Embed & Store.
 
-    Builds a natural-language document from the full response state,
-    embeds it using Gemini, and persists it to ChromaDB + MongoDB.
-
-    In dev mode (no DB connections configured), this node is a no-op:
-    it logs a skip message and sets embedding_stored = False.
+    Builds the prose document, stores it in ChromaDB, and updates MongoDB.
+    This is the only node that performs persistent side-effects.
 
     Flow:
         1. Build prose document from full state
-        2. [DEV: skip] Embed document via Gemini text-embedding-004
-        3. [DEV: skip] Add to ChromaDB collection with metadata
-        4. [DEV: skip] Update MongoDB responses.$set(ai_analysis)
-        5. Set state["embedding_stored"] = True / False
+        2. Build metadata dict for ChromaDB and source citation
+        3. Add Document to ChromaDB via LangChain VectorStore.add_documents()
+        4. Update MongoDB responses collection via $set on ai_analysis block
+        5. Set state["embedding_stored"] = True
 
     Args:
-        state: Full FeedbackState after all previous nodes have run.
+        state: Full FeedbackState after Node 1, 2, 3 have run.
 
     Returns:
-        Updated FeedbackState with `embedding_stored` set.
+        Updated FeedbackState with embedding_stored = True on success.
 
-    TODO (Phase 2 — once DB is set up):
-        - Uncomment ChromaDB calls (app.vector.store)
-        - Uncomment MongoDB $set update (app.db.mongo)
-        - Remove DEV_SKIP_STORAGE guard
+    Note:
+        On failure, sets embedding_stored = False and propagates the exception
+        to the route handler, which sets MongoDB status = "failed".
     """
-    # Build the document (always — useful for debugging even in dev mode)
+    processed_at = datetime.now(timezone.utc)
+
+    # Step 1 — Build prose document
     doc_text = _build_vector_document(state)
 
-    # ── DEV MODE: Skip DB and vector store calls ─────────────────────────────
-    # Remove this block once MongoDB and ChromaDB are configured.
-    DEV_SKIP_STORAGE = True  # ← Set to False when DBs are ready
+    # Step 2 — Build metadata
+    # ChromaDB requires all metadata values to be str/int/float — no booleans.
+    # is_complaint is stored as "true"/"false" string.
+    metadata = {
+        "response_id":       state["response_id"],
+        "form_id":           state["form_id"],
+        "business_id":       state["business_id"],
+        "submitted_at":      state["submitted_at"],
+        "overall_sentiment": state["overall_sentiment"],
+        "urgency":           state["urgency"],
+        "is_complaint":      "true" if state["is_complaint"] else "false",
+        "dominant_topic":    state["dominant_topic"],
+    }
 
-    if DEV_SKIP_STORAGE:
-        print(
-            f"[embed_store_node] DEV MODE — skipping ChromaDB + MongoDB writes "
-            f"for response_id={state['response_id']}"
-        )
-        print(f"[embed_store_node] Document that would be embedded:\n{doc_text[:300]}...")
-        state["embedding_stored"] = False
-        return state
+    # Step 3 — Add to ChromaDB (or Qdrant on deploy)
+    # The document ID is the response_id so we can upsert/delete by it later.
+    store = get_vector_store()
+    store.add_documents(
+        documents=[Document(page_content=doc_text, metadata=metadata)],
+        ids=[state["response_id"]],
+    )
 
-    # ── PRODUCTION: ChromaDB + MongoDB writes ─────────────────────────────────
-    # Uncomment and implement when DBs are ready.
+    # Step 4 — Update MongoDB ai_analysis block
+    db = await get_db()
+    await db.responses.update_one(
+        {"response_id": state["response_id"]},
+        {
+            "$set": {
+                "ai_analysis.status":            "done",
+                "ai_analysis.overall_sentiment": state["overall_sentiment"],
+                "ai_analysis.sentiment_score":   state["sentiment_score"],
+                "ai_analysis.urgency":           state["urgency"],
+                "ai_analysis.is_complaint":      state["is_complaint"],
+                "ai_analysis.dominant_topic":    state["dominant_topic"],
+                "ai_analysis.per_text_analysis": state.get("per_text_analysis", {}),
+                "ai_analysis.summary":           state.get("summary", ""),
+                "ai_analysis.processed_at":      processed_at,
+            }
+        },
+    )
 
-    # from app.vector.embedder import get_embedder
-    # from app.vector.store import get_vector_store
-    # from app.db.mongo import get_db
-
-    # embedder = get_embedder()
-    # store = get_vector_store()
-
-    # metadata = {
-    #     "response_id":       state["response_id"],
-    #     "form_id":           state["form_id"],
-    #     "business_id":       state["business_id"],
-    #     "submitted_at":      state["submitted_at"],
-    #     "overall_sentiment": state["overall_sentiment"],
-    #     "urgency":           state["urgency"],
-    #     "is_complaint":      str(state["is_complaint"]),  # ChromaDB needs str for bool
-    #     "dominant_topic":    state["dominant_topic"],
-    # }
-
-    # store.add_texts(
-    #     texts=[doc_text],
-    #     metadatas=[metadata],
-    #     ids=[state["response_id"]],
-    # )
-
-    # db = await get_db()
-    # await db.responses.update_one(
-    #     {"response_id": state["response_id"]},
-    #     {"$set": {
-    #         "ai_analysis.status":            "done",
-    #         "ai_analysis.overall_sentiment": state["overall_sentiment"],
-    #         "ai_analysis.sentiment_score":   state["sentiment_score"],
-    #         "ai_analysis.urgency":           state["urgency"],
-    #         "ai_analysis.is_complaint":      state["is_complaint"],
-    #         "ai_analysis.dominant_topic":    state["dominant_topic"],
-    #         "ai_analysis.per_text_analysis": state.get("per_text_analysis", {}),
-    #         "ai_analysis.summary":           state.get("summary", ""),
-    #         "ai_analysis.processed_at":      datetime.now(timezone.utc),
-    #     }}
-    # )
-
+    # Step 5 — Mark success
     state["embedding_stored"] = True
     return state

@@ -1,61 +1,205 @@
 """
-InsightLoop AI Service — ChromaDB Vector Store Wrapper (Stub)
-=============================================================
-Manages the ChromaDB persistent vector store for feedback response embeddings.
+InsightLoop AI Service — Vector Store Factory
+==============================================
+Manages the vector store used to persist and retrieve feedback response embeddings.
 
-Storage: Local filesystem at settings.VECTOR_STORE_PATH (gitignored).
-Future: Switch to Qdrant for production deployment (update this file only).
+Current backend: ChromaDB (local persistent files, via langchain-chroma)
+Future backend:  Qdrant (cloud, via langchain-qdrant) — switch by changing .env only
 
-Key operations:
-    - init_vector_store(): Load existing or create new ChromaDB collection
-    - add_documents(): Embed + insert documents with metadata
-    - similarity_search_filtered(): Semantic search scoped to business + form
+Architecture — LangChain VectorStore abstraction:
+    Both Chroma and QdrantVectorStore are subclasses of langchain_core's VectorStore.
+    They expose identical methods: add_documents(), similarity_search(),
+    similarity_search_with_relevance_scores(), delete().
 
-ChromaDB supports native metadata filtering — no post-filtering needed
-(unlike FAISS). Filter on business_id + form_id directly in the query.
+    All callers (embed_store_node, rag_tool.py) use get_vector_store() and call
+    standard LangChain methods — they NEVER need to change when switching backends.
+
+Qdrant migration (when deploying):
+    1. pip install langchain-qdrant qdrant-client
+    2. Set VECTOR_STORE_BACKEND=qdrant in .env
+    3. Set QDRANT_URL, QDRANT_API_KEY, QDRANT_COLLECTION_NAME in .env
+    4. Done. No code changes needed anywhere else.
+
+ChromaDB metadata note:
+    ChromaDB only supports str/int/float in metadata filters.
+    Boolean values (is_complaint) are stored as "true"/"false" strings.
+    The search_with_sources() helper handles this transparently.
+
+Usage:
+    from app.vector.store import get_vector_store, search_with_sources
+    store = get_vector_store()
+    store.add_documents([Document(page_content="...", metadata={...})])
+    results = search_with_sources("cold food complaints", business_id, form_id)
 """
 
-# TODO: Implement ChromaDB vector store
-# import chromadb
-# from langchain_community.vectorstores import Chroma
-# from app.vector.embedder import get_embedder
-# from app.config import settings
+from dataclasses import dataclass
 
-_store = None
+from langchain_core.documents import Document
+from langchain_core.vectorstores import VectorStore
+
+from app.config import settings
+from app.vector.embedder import get_embedder
+
+# Module-level singleton — initialized once, reused across requests
+_store: VectorStore | None = None
 
 
-def get_vector_store():
+# ── Search Result Model ───────────────────────────────────────────────────────
+
+
+@dataclass
+class SearchResult:
     """
-    Returns the singleton ChromaDB vector store instance.
+    A single result from a vector similarity search.
 
-    Creates the local persistent store directory if it doesn't exist.
-    Loads existing data if the store already has embeddings.
+    Used by the RAG tool (Phase 3) to build source citations.
+    The `response_id` in metadata links back to the original MongoDB document
+    so the frontend can display "Source: feedback from April 12" with a link.
+
+    Fields:
+        response_id:  UUID of the original feedback response (from metadata).
+        page_content: The prose document text — first N chars used as snippet.
+        metadata:     Full metadata dict as stored in ChromaDB/Qdrant.
+        score:        Relevance score (0.0 to 1.0). Higher = more relevant.
+    """
+    response_id:  str
+    page_content: str
+    metadata:     dict
+    score:        float
+
+
+# ── Vector Store Factory ──────────────────────────────────────────────────────
+
+
+def get_vector_store() -> VectorStore:
+    """
+    Return the singleton LangChain VectorStore instance.
+
+    Reads VECTOR_STORE_BACKEND from settings to decide which backend to use.
+    Initializes the store on the first call and caches it for subsequent calls.
 
     Returns:
-        Chroma: LangChain-wrapped ChromaDB collection.
+        VectorStore: A LangChain VectorStore implementation (Chroma or Qdrant).
+            Supports: add_documents(), similarity_search(),
+            similarity_search_with_relevance_scores(), delete().
 
-    TODO: Implement.
+    Raises:
+        ValueError: If VECTOR_STORE_BACKEND is not "chroma" or "qdrant".
+        RuntimeError: If Qdrant is selected but QDRANT_URL / QDRANT_API_KEY are empty.
     """
-    raise NotImplementedError("Vector store not yet implemented.")
+    global _store
+    if _store is not None:
+        return _store
+
+    backend = settings.VECTOR_STORE_BACKEND.lower()
+
+    if backend == "qdrant":
+        # ── Qdrant (production) ───────────────────────────────────────────────
+        # Install: pip install langchain-qdrant qdrant-client
+        if not settings.QDRANT_URL or not settings.QDRANT_API_KEY:
+            raise RuntimeError(
+                "QDRANT_URL and QDRANT_API_KEY must be set when "
+                "VECTOR_STORE_BACKEND=qdrant."
+            )
+        from langchain_qdrant import QdrantVectorStore  # noqa: PLC0415
+        from qdrant_client import QdrantClient           # noqa: PLC0415
+
+        client = QdrantClient(
+            url=settings.QDRANT_URL,
+            api_key=settings.QDRANT_API_KEY,
+        )
+        _store = QdrantVectorStore(
+            client=client,
+            collection_name=settings.QDRANT_COLLECTION_NAME,
+            embedding=get_embedder(),
+        )
+
+    elif backend == "chroma":
+        # ── ChromaDB (local development) ──────────────────────────────────────
+        # Install: pip install langchain-chroma chromadb
+        from langchain_chroma import Chroma  # noqa: PLC0415
+
+        _store = Chroma(
+            collection_name=settings.CHROMA_COLLECTION_NAME,
+            embedding_function=get_embedder(),
+            persist_directory=settings.VECTOR_STORE_PATH,
+        )
+
+    else:
+        raise ValueError(
+            f"Unknown VECTOR_STORE_BACKEND='{backend}'. "
+            "Expected 'chroma' or 'qdrant'."
+        )
+
+    return _store
 
 
-def similarity_search_filtered(query: str, business_id: str, form_id: str, k: int = 8):
+# ── Filtered Search Helper ────────────────────────────────────────────────────
+
+
+def search_with_sources(
+    query: str,
+    business_id: str,
+    form_id: str,
+    k: int = 8,
+    min_score: float = 0.5,
+) -> list[SearchResult]:
     """
-    Perform a filtered semantic similarity search.
+    Perform a filtered semantic similarity search scoped to one business + form.
 
-    Uses ChromaDB's native `where` filter to scope results to a specific
-    business and form before doing similarity ranking.
-    This is more accurate than FAISS post-filtering.
+    Uses ChromaDB's native `filter` parameter (or Qdrant's equivalent) to
+    restrict results to the correct tenant and form before ranking by similarity.
+    This is exact filtering — not FAISS-style post-filtering.
 
     Args:
-        query (str): The search query text.
-        business_id (str): Filter results to this business only.
-        form_id (str): Filter results to this form only.
-        k (int): Number of results to return.
+        query:       The natural-language search query from the chat user.
+        business_id: Restrict results to this business only (tenant isolation).
+        form_id:     Restrict results to this form only.
+        k:           Maximum number of results to return (default: 8).
+        min_score:   Minimum relevance score threshold (default: 0.5).
+                     Results below this score are filtered out.
 
     Returns:
-        list[Document]: Top-k relevant LangChain Documents.
+        list[SearchResult]: Ranked results with response_id, page_content,
+            metadata, and relevance score. Used by the RAG tool to build
+            source citations in the QueryResponse.
 
-    TODO: Implement.
+    Note on ChromaDB filter syntax:
+        ChromaDB requires all filter values to be str/int/float.
+        Boolean fields like is_complaint are stored as "true"/"false" strings.
+        To filter by complaint status: filter={"is_complaint": "true"}
+
+    Example (Phase 3 — RAG tool):
+        results = search_with_sources(
+            query="complaints about cold food",
+            business_id="biz-xyz",
+            form_id="form-abc",
+        )
+        sources = [
+            {"response_id": r.response_id,
+             "submitted_at": r.metadata.get("submitted_at"),
+             "snippet": r.page_content[:200]}
+            for r in results
+        ]
     """
-    raise NotImplementedError("Filtered search not yet implemented.")
+    store = get_vector_store()
+
+    raw_results = store.similarity_search_with_relevance_scores(
+        query=query,
+        k=k,
+        filter={
+            "business_id": business_id,
+            "form_id": form_id,
+        },
+    )
+
+    return [
+        SearchResult(
+            response_id=doc.metadata.get("response_id", ""),
+            page_content=doc.page_content,
+            metadata=doc.metadata,
+            score=round(score, 4),
+        )
+        for doc, score in raw_results
+        if score >= min_score
+    ]
