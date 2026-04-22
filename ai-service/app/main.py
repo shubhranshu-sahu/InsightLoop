@@ -19,10 +19,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.config import settings
-from app.routes import health
+from app.routes import analyze, health
 
 # ── Future route imports (uncomment as each module is implemented) ─────────────
-# from app.routes import analyze
 # from app.routes import query
 # from app.routes import summary
 
@@ -169,10 +168,10 @@ async def verify_internal_secret(request: Request, call_next):
 
 # ── Router Registration ───────────────────────────────────────────────────────
 
-app.include_router(health.router, tags=["Health"])
+app.include_router(health.router,   tags=["Health"])
+app.include_router(analyze.router,  tags=["Analysis"])
 
 # Uncomment each router as its implementation is complete:
-# app.include_router(analyze.router, tags=["Analysis"])
 # app.include_router(query.router,   tags=["Chat"])
 # app.include_router(summary.router, tags=["Reports"])
 
