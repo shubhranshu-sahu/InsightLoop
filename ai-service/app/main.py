@@ -20,9 +20,9 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.config import settings
 from app.routes import analyze, health
+from app.routes import query as chat_routes   # Chat endpoints (Phase 1)
 
 # ── Future route imports (uncomment as each module is implemented) ─────────────
-# from app.routes import query
 # from app.routes import summary
 
 
@@ -47,16 +47,16 @@ async def lifespan(app: FastAPI):
     print("[InsightLoop AI] Starting up...")
 
     # MongoDB (required — pipeline writes ai_analysis after every /analyze call)
-    from app.db.mongo import init_mongo, close_mongo
+    from app.db.mongo import init_mongo, close_mongo, create_indexes
     await init_mongo()
+    await create_indexes()
 
-    # MySQL (optional — only needed for alert checker)
-    # NotImplementedError is expected until MySQL is configured.
+    # MySQL (optional — needed for alert checker + chat schema context)
+    # If MySQL is unreachable, the app still starts — only alerts and
+    # MySQL-based schema context are disabled (MongoDB fallback is used).
     from app.db.mysql import init_mysql, close_mysql
     try:
         await init_mysql()
-    except NotImplementedError:
-        print("[MySQL] Not configured — alert checker disabled.")
     except Exception as exc:
         print(f"[MySQL] Connection failed (non-critical): {exc}")
 
@@ -174,12 +174,13 @@ async def verify_internal_secret(request: Request, call_next):
 
 # ── Router Registration ───────────────────────────────────────────────────────
 
-app.include_router(health.router,   tags=["Health"])
-app.include_router(analyze.router,  tags=["Analysis"])
+app.include_router(health.router,        tags=["Health"])
+app.include_router(analyze.router,       tags=["Analysis"])
+app.include_router(chat_routes.router,   prefix="/chat", tags=["Chat"])
 
 # Uncomment each router as its implementation is complete:
-# app.include_router(query.router,   tags=["Chat"])
 # app.include_router(summary.router, tags=["Reports"])
+
 
 
 # ── Root ──────────────────────────────────────────────────────────────────────

@@ -25,6 +25,7 @@ pydantic-settings==2.4.0
 python-dotenv==1.0.0
 httpx==0.27.0                       # Async HTTP (for any internal calls)
 APScheduler==3.10.4                 # Retry cron job scheduler
+tenacity==8.4.2                     # Retry logic with exponential backoff for LLM calls
 
 # ── Data Processing (Phase 3 — Quantitative Chat Tool) ────────────────────────
 pandas==2.2.0

@@ -120,6 +120,21 @@ class Settings(BaseSettings):
         default="insightloop",
         description="MySQL database name.",
     )
+    MYSQL_POOL_MIN: int = Field(
+        default=1,
+        description="Minimum connections in the aiomysql pool.",
+    )
+    MYSQL_POOL_MAX: int = Field(
+        default=5,
+        description="Maximum connections in the aiomysql pool.",
+    )
+    MYSQL_SSL: bool = Field(
+        default=False,
+        description=(
+            "Enable SSL for MySQL connections. Set to true for cloud MySQL "
+            "(PlanetScale, AWS RDS, etc.). Leave false for localhost."
+        ),
+    )
 
     # ── Vector Store ──────────────────────────────────────────────────────────
     VECTOR_STORE_BACKEND: str = Field(
@@ -171,6 +186,26 @@ class Settings(BaseSettings):
     ALERT_WINDOW_HOURS: int = Field(
         default=6,
         description="Time window (hours) used to count high-urgency responses for alerting.",
+    )
+
+    # ── Chat Context Management ───────────────────────────────────────────────
+    CONTEXT_WINDOW_SIZE: int = Field(
+        default=20,
+        description=(
+            "Number of most-recent raw messages always sent to the LLM. "
+            "Older messages beyond this window are replaced by a context summary."
+        ),
+    )
+    SUMMARY_THRESHOLD: int = Field(
+        default=30,
+        description=(
+            "When total message_count exceeds this, summarization is triggered. "
+            "Set low (e.g. 4) during testing to verify summarization works quickly."
+        ),
+    )
+    SCHEMA_CONTEXT_CACHE_TTL: int = Field(
+        default=300,
+        description="Seconds to cache form schema context in memory (avoids repeated MySQL/MongoDB queries).",
     )
 
 

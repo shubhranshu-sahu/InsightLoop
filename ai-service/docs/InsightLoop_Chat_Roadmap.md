@@ -859,43 +859,75 @@ async def get_chart_data(prompt: str) -> ChartData:
 
 ---
 
-## 12. Files to Build
+## 12. Files to Build (Modular Structure)
+
+> **Updated:** The original flat structure has been refactored into a modular layout mirroring `app/pipeline/` (the /analyze pipeline). LangGraph nodes live in separate files under `nodes/`, utility functions under `utils/`, and the graph compilation in its own file.
 
 ```
 app/
 ├── routes/
-│   └── query.py              ← All /chat/* endpoints
+│   └── query.py                  ✅ DONE — All /chat/* endpoints (5 total)
 
 ├── chat/
-│   ├── engine.py             ← Core: load thread, build context, stream LLM, save messages
-│   ├── context_manager.py    ← Sliding window, summarization trigger logic
-│   ├── schema_context.py     ← Build form schema string (MySQL + MongoDB fallback)
-│   ├── guardrails.py         ← Input sanitization + injection detection
-│   └── tools/
-│       ├── rag_tool.py       ← Phase 2: ChromaDB search wrapper
-│       └── data_tool.py      ← Phase 3: MongoDB → pandas → chart JSON
+│   ├── state.py                  ← [NEXT] ChatState TypedDict (extracted from engine.py)
+│   ├── graph.py                  ← [NEXT] Imports nodes, compiles chat_graph
+│   ├── engine.py                 ✅ DONE → will SHRINK (entry point only after restructure)
+│   ├── schema_context.py         ✅ DONE — MySQL + MongoDB fallback, 5-min cache
+│   │
+│   ├── nodes/                    ← [NEXT] LangGraph node functions (1 file per node)
+│   │   ├── __init__.py
+│   │   ├── load_thread.py        ← extracted from engine.py
+│   │   ├── build_context.py      ← extracted from engine.py
+│   │   ├── stream_llm.py         ← extracted from engine.py (+ get_llm() singleton)
+│   │   └── save.py               ← extracted from engine.py
+│   │
+│   ├── utils/                    ← [NEXT] Pure helper functions
+│   │   ├── __init__.py
+│   │   ├── context_manager.py    ✅ DONE → will MOVE here from app/chat/
+│   │   └── guardrails.py         ✅ DONE → will MOVE here from app/chat/
+│   │
+│   └── tools/                    ← Phase 2/3 (stubs exist)
+│       ├── rag_tool.py           🔴 STUB — Phase 2
+│       └── data_tool.py          🔴 STUB — Phase 3
 
 ├── schemas/
-│   └── query.py              ← Updated: ChatMessage, ThreadResponse, MessageRequest,
-│                                         StreamEvent, ChartData (Phase 3)
+│   └── query.py                  ✅ DONE — ChatMessage, ThreadResponse, MessageRequest,
+│                                            SSE events (TokenEvent, DoneEvent, ErrorEvent)
+
+├── db/
+│   ├── mongo.py                  ✅ DONE → adding create_indexes()
+│   └── mysql.py                  🟡 STUB → implementing real pool
 ```
 
 ---
 
 ## 13. Build Order
 
-### Phase 1 — Core Chat (Build Now)
+### Phase 1 — Core Chat ✅ DONE (being restructured)
 
-- [ ] Update `app/schemas/query.py` — `ThreadRequest`, `ThreadResponse`, `MessageRequest`, `ChatMessage` with sources field
-- [ ] Build `app/chat/guardrails.py` — injection detection + input sanitization
-- [ ] Build `app/chat/schema_context.py` — MySQL read with MongoDB fallback
-- [ ] Build `app/chat/context_manager.py` — sliding window logic + summarization trigger
-- [ ] Build `app/chat/engine.py` — full stream flow: load thread → build prompt → stream → save
-- [ ] Build `app/routes/query.py` — all 5 endpoints wired to engine
-- [ ] Register router in `main.py`
-- **Test:** Send a message to `/chat/message`, see it stream, check MongoDB has the saved messages
+All Phase 1 code is implemented and functional. Currently being restructured for modularity.
 
-### Phase 2 — RAG (After Phase 1 works)
+- [x] Update `app/schemas/query.py` — all models defined (ThreadRequest, ThreadResponse, MessageRequest, SSE events)
+- [x] Build `app/chat/guardrails.py` — injection detection + input sanitization
+- [x] Build `app/chat/schema_context.py` — MySQL read with MongoDB fallback + 5-min cache
+- [x] Build `app/chat/context_manager.py` — sliding window + lazy summarization (CONTEXT_WINDOW_SIZE=20, SUMMARY_THRESHOLD=30)
+- [x] Build `app/chat/engine.py` — 4-node LangGraph graph: load_thread → build_context → stream_llm → save
+- [x] Build `app/routes/query.py` — all 5 endpoints (POST /chat/thread, POST /chat/message, GET /threads, GET /thread, DELETE /thread)
+- [x] Register chat router in `main.py` at `/chat` prefix
+
+### Phase 1.5 — Restructure + DB Setup (Current)
+
+- [ ] Implement `app/db/mysql.py` — real aiomysql pool with SSL option
+- [ ] Add `create_indexes()` to `app/db/mongo.py`
+- [ ] Extract `ChatState` → `app/chat/state.py`
+- [ ] Extract nodes → `app/chat/nodes/{load_thread,build_context,stream_llm,save}.py`
+- [ ] Create `app/chat/graph.py` — import nodes, compile graph
+- [ ] Move `context_manager.py` → `app/chat/utils/context_manager.py`
+- [ ] Move `guardrails.py` → `app/chat/utils/guardrails.py`
+- [ ] Shrink `engine.py` to entry point only (~80 lines)
+- **Test:** Server starts, `/health` works, MySQL + MongoDB connected
+
+### Phase 2 — RAG (After restructure)
 
 - [ ] Build `app/chat/tools/rag_tool.py` — wraps existing `search_with_sources()`
 - [ ] Add `should_use_rag()` classifier to engine

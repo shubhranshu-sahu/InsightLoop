@@ -48,7 +48,7 @@ async def init_mongo() -> None:
 
     # Verify connection by pinging the admin database
     await _client.admin.command("ping")
-    print(f"[MongoDB] Connected  →  {settings.MONGO_URI} / {settings.MONGO_DB_NAME}")
+    print(f"[MongoDB] Connected -> {settings.MONGO_URI} / {settings.MONGO_DB_NAME}")
 
 
 async def get_db() -> AsyncIOMotorDatabase:
@@ -79,6 +79,55 @@ async def get_db() -> AsyncIOMotorDatabase:
             "Ensure init_mongo() is called in the FastAPI lifespan startup."
         )
     return _client[settings.MONGO_DB_NAME]
+
+
+async def create_indexes() -> None:
+    """
+    Create MongoDB indexes. Called once on startup. Idempotent.
+
+    create_index() is idempotent — if the index already exists, it does nothing.
+    This is safe to call on every startup without side effects.
+
+    Indexes created:
+        chat_threads:
+            - (business_id, form_id) unique — primary lookup, enforces one-thread-per-form
+            - (thread_id) unique — direct lookup by ID inside graph nodes
+            - (business_id, updated_at desc) — sidebar list sorted by recent activity
+
+        responses:
+            - (form_id, business_id) — RAG retrieval filter, schema context query
+            - (ai_analysis.status) — retry worker finds pending/failed docs
+            - (form_id, submitted_at desc) — date-range queries in data tool
+            - (response_id) unique — direct lookup by response ID
+    """
+    db = _client[settings.MONGO_DB_NAME]
+
+    # ── chat_threads ──────────────────────────────────────────────────────────
+    await db.chat_threads.create_index(
+        [("business_id", 1), ("form_id", 1)], unique=True
+    )
+    await db.chat_threads.create_index(
+        [("thread_id", 1)], unique=True
+    )
+    await db.chat_threads.create_index(
+        [("business_id", 1), ("updated_at", -1)]
+    )
+
+    # ── responses ─────────────────────────────────────────────────────────────
+    await db.responses.create_index(
+        [("form_id", 1), ("business_id", 1)]
+    )
+    await db.responses.create_index(
+        [("ai_analysis.status", 1)]
+    )
+    await db.responses.create_index(
+        [("form_id", 1), ("submitted_at", -1)]
+    )
+    await db.responses.create_index(
+        [("response_id", 1)], unique=True
+    )
+
+    print("[MongoDB] Indexes created/verified.")
 
 
 async def close_mongo() -> None:
