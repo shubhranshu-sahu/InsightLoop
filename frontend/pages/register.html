@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — InsightLoop</title>
+  <meta name="description" content="Create your free InsightLoop account and start collecting AI-powered customer feedback insights.">
+
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+
+  <div class="auth-page">
+    <!-- Background orbs -->
+    <div class="auth-bg">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+    </div>
+
+    <div class="auth-card" style="max-width: 500px;">
+      <div class="auth-card-inner">
+
+        <!-- Logo -->
+        <a href="../index.html" class="auth-logo">
+          <img src="../assets/images/logo.png" alt="InsightLoop">
+          <span>Insight<span class="text-gradient">Loop</span></span>
+        </a>
+
+        <!-- Header -->
+        <div class="auth-header">
+          <h1>Create your account</h1>
+          <p>Start understanding your customers in under 2 minutes.</p>
+        </div>
+
+        <!-- Alert -->
+        <div id="auth-alert" class="auth-alert"></div>
+
+        <!-- Register Form -->
+        <form id="register-form" novalidate>
+
+          <!-- Business Name -->
+          <div class="form-group">
+            <label for="reg-name" class="form-label">Business Name *</label>
+            <input
+              type="text"
+              id="reg-name"
+              class="form-input"
+              placeholder="e.g. Spice Garden Restaurant"
+              autocomplete="organization"
+              required
+            >
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label for="reg-email" class="form-label">Email Address *</label>
+            <input
+              type="email"
+              id="reg-email"
+              class="form-input"
+              placeholder="owner@yourbusiness.com"
+              autocomplete="email"
+              required
+            >
+          </div>
+
+          <!-- Two-column: Industry + Phone -->
+          <div class="register-grid">
+            <div class="form-group">
+              <label for="reg-industry" class="form-label">Industry</label>
+              <select id="reg-industry" class="form-select">
+                <option value="">Select...</option>
+                <option value="Restaurant">Restaurant</option>
+                <option value="Retail">Retail</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Hospitality">Hospitality</option>
+                <option value="Education">Education</option>
+                <option value="Fitness">Fitness / Gym</option>
+                <option value="Salon">Salon / Spa</option>
+                <option value="Automotive">Automotive</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-phone" class="form-label">Phone</label>
+              <input
+                type="tel"
+                id="reg-phone"
+                class="form-input"
+                placeholder="1234567890"
+                autocomplete="tel"
+              >
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label for="reg-password" class="form-label">Password *</label>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="reg-password"
+                class="form-input"
+                placeholder="At least 6 characters"
+                autocomplete="new-password"
+                minlength="6"
+                required
+              >
+              <button type="button" class="password-toggle" aria-label="Toggle password visibility">👁️</button>
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="form-group">
+            <label for="reg-confirm" class="form-label">Confirm Password *</label>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="reg-confirm"
+                class="form-input"
+                placeholder="Re-enter your password"
+                autocomplete="new-password"
+                required
+              >
+              <button type="button" class="password-toggle" aria-label="Toggle password visibility">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-brand" id="register-btn">
+            Create Account
+          </button>
+        </form>
+
+        <!-- Footer link -->
+        <div class="auth-footer">
+          Already have an account? <a href="login.html">Log in</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="../js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!-- InsightLoop — Sidebar Component (loaded via JS into dashboard pages) -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a href="/pages/dashboard.html" class="sidebar-logo">
+      <img src="/assets/images/logo.png" alt="InsightLoop" width="32" height="32">
+      <span class="sidebar-brand">Insight<span class="text-gradient">Loop</span></span>
+    </a>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul class="sidebar-menu">
+      <li>
+        <a href="/pages/dashboard.html" class="sidebar-link" data-page="dashboard">
+          <span class="sidebar-icon">📊</span>
+          <span class="sidebar-text">Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="/pages/forms.html" class="sidebar-link" data-page="forms">
+          <span class="sidebar-icon">📋</span>
+          <span class="sidebar-text">Forms</span>
+        </a>
+      </li>
+      <li>
+        <a href="/pages/chat.html" class="sidebar-link" data-page="chat">
+          <span class="sidebar-icon">💬</span>
+          <span class="sidebar-text">AI Chat</span>
+        </a>
+      </li>
+      <li>
+        <a href="/pages/settings.html" class="sidebar-link" data-page="settings">
+          <span class="sidebar-icon">⚙️</span>
+          <span class="sidebar-text">Settings</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-link" id="logout-btn" onclick="import('/js/config.js').then(m => m.logout())">
+      <span class="sidebar-icon">🚪</span>
+      <span class="sidebar-text">Log Out</span>
+    </button>
+  </div>
+</aside>
+
+<!-- Sidebar inline styles (will move to main.css when building dashboard) -->
+<style>
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--bg-raised);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    padding: 1.25rem 0.75rem;
+  }
+
+  .sidebar-header {
+    padding: 0 0.5rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+  }
+
+  .sidebar-brand {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all var(--duration-fast) var(--ease-out);
+    border: none;
+    background: none;
+    width: 100%;
+    cursor: pointer;
+    font-family: var(--font-sans);
+  }
+
+  .sidebar-link:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .sidebar-link.active {
+    background: var(--gradient-subtle);
+    color: var(--primary-light);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+  }
+
+  .sidebar-icon {
+    font-size: 1.125rem;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+    margin-top: auto;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Push main content right */
+  .main-content {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+  }
+
+  .page-content {
+    padding: 2rem;
+    max-width: var(--content-max-width);
+  }
+</style>
+
+<!-- Auto-highlight active page -->
+<script>
+  (function() {
+    const path = window.location.pathname;
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
+      if (path.includes(link.dataset.page)) {
+        link.classList.add('active');
+      }
+    });
+  })();
+</script>

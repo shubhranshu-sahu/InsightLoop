@@ -1,0 +1,65 @@
+<!-- InsightLoop — Navbar Component (loaded via JS into dashboard pages) -->
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <h2 class="topbar-title" id="page-title"></h2>
+    <div class="topbar-actions">
+      <span class="topbar-user" id="topbar-user"></span>
+    </div>
+  </div>
+</header>
+
+<style>
+  .topbar {
+    height: var(--navbar-height);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-base);
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .topbar-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .topbar-user {
+    font-size: 0.813rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  // Set page title from <title> tag
+  (function() {
+    const titleEl = document.getElementById('page-title');
+    if (titleEl) {
+      const pageTitle = document.title.split('—')[0].trim();
+      titleEl.textContent = pageTitle;
+    }
+
+    // Set user name
+    const userEl = document.getElementById('topbar-user');
+    if (userEl) {
+      try {
+        const user = JSON.parse(localStorage.getItem('insightloop_user'));
+        if (user && user.name) {
+          userEl.textContent = user.name;
+        }
+      } catch {}
+    }
+  })();
+</script>
