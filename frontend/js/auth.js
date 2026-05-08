@@ -14,7 +14,7 @@ import { apiFetch, saveAuth, getToken, showToast } from './config.js';
 // ── If already logged in, redirect to dashboard ─────────────────────────────
 
 if (getToken()) {
-  window.location.href = '/pages/dashboard.html';
+  window.location.href = 'dashboard.html';
 }
 
 
@@ -56,7 +56,7 @@ if (loginForm) {
       saveAuth(data.token, data.business);
 
       // Redirect to dashboard
-      window.location.href = '/pages/dashboard.html';
+      window.location.href = 'dashboard.html';
 
     } catch (err) {
       showAlert(alertEl, err.message, 'error');
@@ -125,7 +125,7 @@ if (registerForm) {
       });
 
       // Redirect to login with success message
-      window.location.href = '/pages/login.html?registered=true';
+      window.location.href = 'login.html?registered=true';
 
     } catch (err) {
       showAlert(alertEl, err.message, 'error');

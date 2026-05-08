@@ -61,7 +61,7 @@ export function getUser() {
 export function logout() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
-  window.location.href = '/pages/login.html';
+  window.location.href = 'login.html';
 }
 
 /**
@@ -71,7 +71,7 @@ export function logout() {
  */
 export function requireAuth() {
   if (!getToken()) {
-    window.location.href = '/pages/login.html';
+    window.location.href = 'login.html';
     return false;
   }
   return true;
@@ -128,7 +128,8 @@ export async function apiFetch(endpoint, options = {}) {
   });
 
   // Handle 401 — session expired or invalid token
-  if (response.status === 401) {
+  // Do not redirect if we are currently trying to log in (wrong password returns 401)
+  if (response.status === 401 && endpoint !== '/api/auth/login') {
     logout();
     throw new Error('Session expired. Please log in again.');
   }
@@ -188,7 +189,7 @@ export function showToast(message, type = 'info', duration = 4000) {
  * @param {string} url - Path to the HTML partial file
  *
  * @example
- *   loadComponent('#sidebar-container', '/components/sidebar.html');
+ *   loadComponent('#sidebar-container', '../components/sidebar.html');
  */
 export async function loadComponent(selector, url) {
   const container = document.querySelector(selector);

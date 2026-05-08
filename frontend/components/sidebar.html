@@ -1,8 +1,8 @@
 <!-- InsightLoop — Sidebar Component (loaded via JS into dashboard pages) -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <a href="/pages/dashboard.html" class="sidebar-logo">
-      <img src="/assets/images/logo.png" alt="InsightLoop" width="32" height="32">
+    <a href="dashboard.html" class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="InsightLoop" width="32" height="32">
       <span class="sidebar-brand">Insight<span class="text-gradient">Loop</span></span>
     </a>
   </div>
@@ -10,25 +10,25 @@
   <nav class="sidebar-nav">
     <ul class="sidebar-menu">
       <li>
-        <a href="/pages/dashboard.html" class="sidebar-link" data-page="dashboard">
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">
           <span class="sidebar-icon">📊</span>
           <span class="sidebar-text">Dashboard</span>
         </a>
       </li>
       <li>
-        <a href="/pages/forms.html" class="sidebar-link" data-page="forms">
+        <a href="forms.html" class="sidebar-link" data-page="forms">
           <span class="sidebar-icon">📋</span>
           <span class="sidebar-text">Forms</span>
         </a>
       </li>
       <li>
-        <a href="/pages/chat.html" class="sidebar-link" data-page="chat">
+        <a href="chat.html" class="sidebar-link" data-page="chat">
           <span class="sidebar-icon">💬</span>
           <span class="sidebar-text">AI Chat</span>
         </a>
       </li>
       <li>
-        <a href="/pages/settings.html" class="sidebar-link" data-page="settings">
+        <a href="settings.html" class="sidebar-link" data-page="settings">
           <span class="sidebar-icon">⚙️</span>
           <span class="sidebar-text">Settings</span>
         </a>
@@ -37,7 +37,7 @@
   </nav>
 
   <div class="sidebar-footer">
-    <button class="sidebar-link" id="logout-btn" onclick="import('/js/config.js').then(m => m.logout())">
+    <button class="sidebar-link" id="logout-btn" onclick="import('../js/config.js').then(m => m.logout())">
       <span class="sidebar-icon">🚪</span>
       <span class="sidebar-text">Log Out</span>
     </button>
