@@ -29,3 +29,9 @@ tenacity==8.4.2                     # Retry logic with exponential backoff for L
 
 # ── Data Processing (Phase 3 — Quantitative Chat Tool) ────────────────────────
 pandas==2.2.0
+
+langchain-qdrant==0.2.0
+qdrant-client==1.10.1
+
+#for compatibility google gemini sdk
+protobuf==5.29.6

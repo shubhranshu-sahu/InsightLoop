@@ -70,5 +70,5 @@ async def health_check() -> HealthResponse:
         service="insightloop-ai",
         llm_model=settings.GEMINI_LLM_MODEL,
         embedding_model=settings.GEMINI_EMBEDDING_MODEL,
-        vector_store="chroma",
+        vector_store=settings.VECTOR_STORE_BACKEND
     )
