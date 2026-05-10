@@ -1,5 +1,19 @@
-<!-- InsightLoop — Sidebar Component (loaded via JS into dashboard pages) -->
+<!--
+  InsightLoop — Sidebar Component
+  ================================
+  Injected into every authenticated page via loadComponent().
+  Uses Lucide icons (loaded by the parent page's <script> tag).
+  
+  Active link highlighting:
+    The inline <script> at the bottom reads window.location.pathname
+    and adds the "active" class to the matching <a> tag.
+    
+  Logout:
+    Calls config.js → logout() via dynamic import to avoid coupling.
+-->
 <aside class="sidebar" id="sidebar">
+
+  <!-- ── Brand / Logo ───────────────────────────────────────────────────── -->
   <div class="sidebar-header">
     <a href="dashboard.html" class="sidebar-logo">
       <img src="../assets/images/logo.png" alt="InsightLoop" width="32" height="32">
@@ -7,44 +21,51 @@
     </a>
   </div>
 
-  <nav class="sidebar-nav">
+  <!-- ── Navigation Links ───────────────────────────────────────────────── -->
+  <nav class="sidebar-nav" aria-label="Main navigation">
     <ul class="sidebar-menu">
       <li>
-        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">
-          <span class="sidebar-icon">📊</span>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard" aria-label="Dashboard">
+          <i data-lucide="grid-2x2" class="sidebar-icon"></i>
           <span class="sidebar-text">Dashboard</span>
         </a>
       </li>
       <li>
-        <a href="forms.html" class="sidebar-link" data-page="forms">
-          <span class="sidebar-icon">📋</span>
+        <a href="forms.html" class="sidebar-link" data-page="forms" aria-label="Forms">
+          <i data-lucide="file-text" class="sidebar-icon"></i>
           <span class="sidebar-text">Forms</span>
         </a>
       </li>
       <li>
-        <a href="chat.html" class="sidebar-link" data-page="chat">
-          <span class="sidebar-icon">💬</span>
+        <a href="chat.html" class="sidebar-link" data-page="chat" aria-label="AI Chat">
+          <i data-lucide="bot" class="sidebar-icon"></i>
           <span class="sidebar-text">AI Chat</span>
         </a>
       </li>
       <li>
-        <a href="settings.html" class="sidebar-link" data-page="settings">
-          <span class="sidebar-icon">⚙️</span>
+        <a href="settings.html" class="sidebar-link" data-page="settings" aria-label="Settings">
+          <i data-lucide="settings" class="sidebar-icon"></i>
           <span class="sidebar-text">Settings</span>
         </a>
       </li>
     </ul>
   </nav>
 
+  <!-- ── Logout ─────────────────────────────────────────────────────────── -->
   <div class="sidebar-footer">
-    <button class="sidebar-link" id="logout-btn" onclick="import('../js/config.js').then(m => m.logout())">
-      <span class="sidebar-icon">🚪</span>
+    <button class="sidebar-link sidebar-logout" id="logout-btn" aria-label="Log out"
+      onclick="import('../js/config.js').then(m => m.logout())">
+      <i data-lucide="log-out" class="sidebar-icon"></i>
       <span class="sidebar-text">Log Out</span>
     </button>
   </div>
+
 </aside>
 
-<!-- Sidebar inline styles (will move to main.css when building dashboard) -->
+<!-- ── Styles ──────────────────────────────────────────────────────────────
+     These will eventually move into main.css once all pages are built.
+     Kept here for now so the sidebar is self-contained.
+──────────────────────────────────────────────────────────────────────────── -->
 <style>
   .sidebar {
     position: fixed;
@@ -58,12 +79,15 @@
     flex-direction: column;
     z-index: 50;
     padding: 1.25rem 0.75rem;
+    overflow-y: auto;
   }
 
+  /* Header / Brand */
   .sidebar-header {
     padding: 0 0.5rem 1.25rem;
     border-bottom: 1px solid var(--border);
     margin-bottom: 1rem;
+    flex-shrink: 0;
   }
 
   .sidebar-logo {
@@ -73,22 +97,33 @@
     text-decoration: none;
   }
 
+  .sidebar-logo img {
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+
   .sidebar-brand {
     font-size: 1.125rem;
     font-weight: 700;
     color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  /* Nav list */
+  .sidebar-nav {
+    flex: 1;
   }
 
   .sidebar-menu {
     list-style: none;
     padding: 0;
     margin: 0;
-    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
+  /* Individual link / button */
   .sidebar-link {
     display: flex;
     align-items: center;
@@ -99,12 +134,15 @@
     font-size: 0.875rem;
     font-weight: 500;
     text-decoration: none;
-    transition: all var(--duration-fast) var(--ease-out);
+    transition: background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+    /* Reset button defaults */
     border: none;
     background: none;
     width: 100%;
     cursor: pointer;
     font-family: var(--font-sans);
+    text-align: left;
   }
 
   .sidebar-link:hover {
@@ -118,40 +156,54 @@
     border: 1px solid rgba(99, 102, 241, 0.15);
   }
 
+  /* Lucide icon sizing */
   .sidebar-icon {
-    font-size: 1.125rem;
-    width: 24px;
-    text-align: center;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
+    stroke-width: 2;
   }
 
+  /* Footer / logout */
   .sidebar-footer {
     border-top: 1px solid var(--border);
     padding-top: 0.75rem;
     margin-top: auto;
+    flex-shrink: 0;
   }
 
-  .sidebar-nav {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  .sidebar-logout {
+    color: var(--text-muted);
   }
 
-  /* Push main content right */
+  .sidebar-logout:hover {
+    color: var(--danger);
+    background: var(--danger-bg);
+  }
+
+  /* ── Main content offset ─────────────────────────────────────────────── */
   .main-content {
     margin-left: var(--sidebar-width);
     min-height: 100vh;
   }
 
-  .page-content {
-    padding: 2rem;
-    max-width: var(--content-max-width);
+  @media (max-width: 768px) {
+    .sidebar {
+      display: none;
+      /* TODO: add hamburger menu for mobile */
+    }
+
+    .main-content {
+      margin-left: 0;
+    }
   }
 </style>
 
-<!-- Auto-highlight active page -->
+<!-- ── Active page highlight ───────────────────────────────────────────────
+     Runs immediately after injection, before Lucide renders.
+──────────────────────────────────────────────────────────────────────────── -->
 <script>
-  (function() {
+  (function markActivePage() {
     const path = window.location.pathname;
     document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
       if (path.includes(link.dataset.page)) {

@@ -1,9 +1,38 @@
-<!-- InsightLoop — Navbar Component (loaded via JS into dashboard pages) -->
+<!--
+  InsightLoop — Top Navbar Component
+  =====================================
+  Injected into every authenticated page via loadComponent().
+  
+  Displays:
+    - Current page title (read from the parent page's <title> tag)
+    - Alert bell with unread badge (badge count set by dashboard.js)
+    - Business name from localStorage
+    
+  The alert bell links to the alerts section on the dashboard page.
+  On other pages it links back to dashboard.html#alerts.
+-->
 <header class="topbar" id="topbar">
   <div class="topbar-inner">
+
+    <!-- ── Page Title ──────────────────────────────────────────────────── -->
     <h2 class="topbar-title" id="page-title"></h2>
+
+    <!-- ── Right-side actions ─────────────────────────────────────────── -->
     <div class="topbar-actions">
-      <span class="topbar-user" id="topbar-user"></span>
+
+      <!-- Alert bell — badge count is updated by dashboard.js -->
+      <a href="dashboard.html#alerts" class="topbar-bell" id="topbar-bell" aria-label="View alerts">
+        <i data-lucide="bell"></i>
+        <!-- Hidden by default; shown + populated by dashboard.js when unread > 0 -->
+        <span class="topbar-bell-badge" id="topbar-alert-badge" style="display:none;">0</span>
+      </a>
+
+      <!-- Business name -->
+      <div class="topbar-user">
+        <i data-lucide="user-circle" style="width:16px;height:16px;"></i>
+        <span id="topbar-user-name"></span>
+      </div>
+
     </div>
   </div>
 </header>
@@ -35,7 +64,53 @@
     margin: 0;
   }
 
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  /* Alert bell */
+  .topbar-bell {
+    position: relative;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    transition: color var(--duration-fast);
+  }
+
+  .topbar-bell:hover {
+    color: var(--text-primary);
+  }
+
+  .topbar-bell svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .topbar-bell-badge {
+    position: absolute;
+    top: -5px;
+    right: -6px;
+    background: var(--danger);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    line-height: 1;
+  }
+
+  /* Business name */
   .topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.813rem;
     color: var(--text-secondary);
     font-weight: 500;
@@ -43,23 +118,23 @@
 </style>
 
 <script>
-  // Set page title from <title> tag
-  (function() {
+  (function initNavbar() {
+    // Set page title from the <title> tag (strip " — InsightLoop" suffix)
     const titleEl = document.getElementById('page-title');
     if (titleEl) {
-      const pageTitle = document.title.split('—')[0].trim();
-      titleEl.textContent = pageTitle;
+      const rawTitle = document.title || '';
+      titleEl.textContent = rawTitle.split('—')[0].trim();
     }
 
-    // Set user name
-    const userEl = document.getElementById('topbar-user');
-    if (userEl) {
+    // Set business name from localStorage (written by auth.js on login)
+    const nameEl = document.getElementById('topbar-user-name');
+    if (nameEl) {
       try {
-        const user = JSON.parse(localStorage.getItem('insightloop_user'));
-        if (user && user.name) {
-          userEl.textContent = user.name;
-        }
-      } catch {}
+        const user = JSON.parse(localStorage.getItem('insightloop_user') || '{}');
+        nameEl.textContent = user.name || '';
+      } catch {
+        // Non-critical — just leave it blank
+      }
     }
   })();
 </script>

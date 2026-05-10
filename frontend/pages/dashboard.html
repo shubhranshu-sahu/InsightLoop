@@ -1,26 +1,214 @@
-<!-- InsightLoop — Dashboard (stub) -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — InsightLoop</title>
+  <meta name="description" content="InsightLoop business dashboard — feedback overview, sentiment trends, and alerts.">
+
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
+
+  <!-- Bootstrap 5.3 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- InsightLoop Styles -->
   <link rel="stylesheet" href="../css/main.css">
   <link rel="stylesheet" href="../css/dashboard.css">
 </head>
-<body>
-  <div id="sidebar-container"></div>
-  <main class="main-content">
-    <div id="navbar-container"></div>
-    <div class="page-content">
-      <h1>Dashboard</h1>
-      <p style="color: var(--text-secondary);">Coming soon — stats, charts, and alerts.</p>
-    </div>
-  </main>
 
+<body>
+
+  <!-- Sidebar injected by JS -->
+  <div id="sidebar-container"></div>
+
+  <!-- ── Main Content ──────────────────────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- Navbar injected by JS -->
+    <div id="navbar-container"></div>
+
+    <div class="page-content">
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION A — Stat Cards
+           ═══════════════════════════════════════════════════════════════════ -->
+      <section class="dashboard-section" id="section-stats">
+        <!--
+          Six stat cards injected by dashboard.js → renderStatCards().
+          Each rendered card is a .stat-card element.
+          The grid is pre-rendered here; JS only fills the inner HTML.
+        -->
+        <div class="stat-grid" id="stat-grid">
+          <!-- Skeleton placeholders — replaced once API responds -->
+          <div class="stat-card skeleton"></div>
+          <div class="stat-card skeleton"></div>
+          <div class="stat-card skeleton"></div>
+          <div class="stat-card skeleton"></div>
+          <div class="stat-card skeleton"></div>
+          <div class="stat-card skeleton"></div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION B + C — Sentiment Trend (left) & Urgency Donut (right)
+           ═══════════════════════════════════════════════════════════════════ -->
+      <section class="dashboard-section" id="section-charts">
+        <div class="chart-row">
+
+          <!-- B: Sentiment Trend Line Chart -->
+          <div class="chart-card" id="trend-card">
+            <div class="section-title-row">
+              <h3 class="section-title">Sentiment Trend</h3>
+              <!-- Period tab switcher — active state managed by JS -->
+              <div class="period-tabs" id="period-tabs" role="tablist" aria-label="Time period">
+                <button class="period-tab active" data-days="7" role="tab">7d</button>
+                <button class="period-tab" data-days="30" role="tab">30d</button>
+                <button class="period-tab" data-days="90" role="tab">90d</button>
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper" id="trend-chart-wrapper">
+              <!-- Canvas created by Chart.js; replaced on error by state-box -->
+              <canvas id="sentiment-trend-chart" aria-label="Sentiment trend line chart" role="img"></canvas>
+            </div>
+          </div>
+
+          <!-- C: Urgency Donut Chart -->
+          <div class="chart-card" id="urgency-card">
+            <div class="section-title-row">
+              <h3 class="section-title">Urgency Breakdown</h3>
+              <span style="font-size:0.75rem;color:var(--text-muted);">Last 30 days</span>
+            </div>
+            <div class="donut-canvas-wrapper" id="urgency-chart-wrapper">
+              <canvas id="urgency-donut-chart" aria-label="Urgency breakdown donut chart" role="img"></canvas>
+            </div>
+            <!-- Legend injected by renderUrgencyChart() -->
+            <div class="donut-legend" id="urgency-legend"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION D — Top Topics (horizontal bar chart)
+           ═══════════════════════════════════════════════════════════════════ -->
+      <section class="dashboard-section" id="section-topics">
+        <div class="chart-card">
+          <div class="section-title-row">
+            <h3 class="section-title">Top Topics</h3>
+            <span style="font-size:0.75rem;color:var(--text-muted);">Last 30 days</span>
+          </div>
+          <div class="topics-canvas-wrapper" id="topics-chart-wrapper">
+            <canvas id="topics-bar-chart" aria-label="Top customer topics horizontal bar chart" role="img"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION E — Form Performance Table
+           ═══════════════════════════════════════════════════════════════════ -->
+      <section class="dashboard-section" id="section-forms">
+        <div class="section-title-row">
+          <h3 class="section-title">Form Performance</h3>
+          <a href="forms.html" class="section-action">
+            View All Forms <i data-lucide="arrow-right"></i>
+          </a>
+        </div>
+
+        <!--
+          Table wrapper: table body rows injected by renderFormsTable().
+          On error or no data, the wrapper is replaced with a state-box.
+        -->
+        <div class="table-card" id="forms-table-wrapper">
+          <table class="data-table" id="forms-table">
+            <thead>
+              <tr>
+                <th>Form Name</th>
+                <th>Status</th>
+                <th>Responses</th>
+                <th>Positive %</th>
+                <th>Negative %</th>
+                <th>Complaints</th>
+                <th>Last Response</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="forms-table-body">
+              <!-- Skeleton rows rendered by JS while loading -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION F — Recent Responses Table
+           ═══════════════════════════════════════════════════════════════════ -->
+      <section class="dashboard-section" id="section-recent">
+        <div class="section-title-row">
+          <h3 class="section-title">Recent Responses</h3>
+          <!-- No "view all" link yet — responses page is a future build -->
+        </div>
+
+        <div class="table-card" id="recent-table-wrapper">
+          <table class="data-table" id="recent-table">
+            <thead>
+              <tr>
+                <th>Form</th>
+                <th>Submitted</th>
+                <th>Sentiment</th>
+                <th>Urgency</th>
+                <th>Topic</th>
+                <th>Summary</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="recent-table-body">
+              <!-- Rows injected by renderRecentTable() -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           SECTION G — Alerts Panel
+           Shown only when there are unread alerts (managed by JS).
+           Hidden by default via display:none — JS removes this on render.
+           ═══════════════════════════════════════════════════════════════════ -->
+      <section class="dashboard-section" id="section-alerts" style="display:none;">
+        <div class="alerts-panel" id="alerts-panel">
+          <div class="alerts-header">
+            <div class="alerts-header-left">
+              <i data-lucide="zap"></i>
+              <span id="alerts-panel-title">Unread Alerts</span>
+            </div>
+            <button class="btn-mark-all" id="btn-mark-all-read" aria-label="Mark all alerts as read">
+              <i data-lucide="check-check"></i>
+              Mark All as Read
+            </button>
+          </div>
+          <!-- Alert cards injected by renderAlerts() -->
+          <div class="alerts-list" id="alerts-list"></div>
+        </div>
+      </section>
+
+    </div><!-- /.page-content -->
+  </main><!-- /.main-content -->
+
+
+  <!-- ── Scripts ─────────────────────────────────────────────────────────────
+       Load order matters:
+         1. Bootstrap JS (for any Bootstrap components)
+         2. Lucide Icons (must run after DOM exists)
+         3. Chart.js (needed by dashboard.js)
+         4. dashboard.js (our code — loads last)
+  ──────────────────────────────────────────────────────────────────────────── -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- dashboard.js is a module so it can import from config.js -->
   <script type="module" src="../js/dashboard.js"></script>
+
 </body>
+
 </html>
