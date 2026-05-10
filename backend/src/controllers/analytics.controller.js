@@ -89,7 +89,7 @@ const getDashboardStats = async (req, res, next) => {
         {
           $match: {
             business_id: businessId,
-            'ai_analysis.status': 'completed',
+            'ai_analysis.status': 'done',
             submitted_at: { $gte: thirtyDaysAgo },
           },
         },
@@ -106,7 +106,7 @@ const getDashboardStats = async (req, res, next) => {
         {
           $match: {
             business_id: businessId,
-            'ai_analysis.status': 'completed',
+            'ai_analysis.status': 'done',
             submitted_at: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
           },
         },
@@ -123,7 +123,7 @@ const getDashboardStats = async (req, res, next) => {
         {
           $match: {
             business_id: businessId,
-            'ai_analysis.status': 'completed',
+            'ai_analysis.status': 'done',
             submitted_at: { $gte: thirtyDaysAgo },
           },
         },
@@ -140,7 +140,7 @@ const getDashboardStats = async (req, res, next) => {
         {
           $match: {
             business_id: businessId,
-            'ai_analysis.status': 'completed',
+            'ai_analysis.status': 'done',
             'ai_analysis.dominant_topic': { $exists: true, $ne: null },
             submitted_at: { $gte: thirtyDaysAgo },
           },
@@ -261,7 +261,7 @@ const getSentimentTrend = async (req, res, next) => {
       {
         $match: {
           business_id: businessId,
-          'ai_analysis.status': 'completed',
+          'ai_analysis.status': 'done',
           submitted_at: { $gte: startDate },
         },
       },
@@ -323,7 +323,7 @@ const getFormsPerformance = async (req, res, next) => {
       {
         $match: {
           business_id: businessId,
-          'ai_analysis.status': 'completed',
+          'ai_analysis.status': 'done',
         },
       },
       {
@@ -498,12 +498,12 @@ const getFormAnalytics = async (req, res, next) => {
       Response.countDocuments({ form_id: formId }),
 
       Response.aggregate([
-        { $match: { form_id: formId, 'ai_analysis.status': 'completed' } },
+        { $match: { form_id: formId, 'ai_analysis.status': 'done' } },
         { $group: { _id: '$ai_analysis.overall_sentiment', count: { $sum: 1 } } },
       ]),
 
       Response.aggregate([
-        { $match: { form_id: formId, 'ai_analysis.status': 'completed' } },
+        { $match: { form_id: formId, 'ai_analysis.status': 'done' } },
         { $group: { _id: '$ai_analysis.urgency', count: { $sum: 1 } } },
       ]),
 

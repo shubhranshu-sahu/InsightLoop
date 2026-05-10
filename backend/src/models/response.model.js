@@ -41,7 +41,7 @@ const responseSchema = new mongoose.Schema(
       status: {
         type: String,
         default: 'pending',
-        enum: ['pending', 'processing', 'completed', 'failed'],
+        enum: ['pending', 'processing', 'done', 'failed'],
       },
       processed_at: {
         type: Date,
