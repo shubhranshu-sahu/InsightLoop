@@ -24,6 +24,8 @@ const reportsRoutes = require('./routes/reports.routes');
 const qrRoutes = require('./routes/qr.routes');
 const adminRoutes = require('./routes/admin.routes');
 const publicRoutes = require('./routes/public.routes');
+const responsesRoutes = require('./routes/responses.routes');
+const alertsRoutes = require('./routes/alerts.routes');
 
 const app = express();
 
@@ -33,7 +35,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (QR codes, uploads)
+// Serve static files (reports, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // --- API Routes ---
@@ -45,6 +47,8 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/responses', responsesRoutes);
+app.use('/api/alerts', alertsRoutes);
 
 // --- Public Routes (no auth — served to customers via QR scan) ---
 app.use('/form', publicRoutes);

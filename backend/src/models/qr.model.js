@@ -2,6 +2,12 @@ const { getPool } = require('../config/db');
 
 /**
  * QR Code Model — MySQL query functions for qr_codes table.
+ *
+ * Table schema (simplified — no image storage):
+ *   qr_id       VARCHAR(36)  PRIMARY KEY DEFAULT (UUID())
+ *   form_id     VARCHAR(36)  NOT NULL UNIQUE
+ *   public_url  VARCHAR(500) NOT NULL
+ *   created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
  */
 
 const QRModel = {
@@ -33,12 +39,12 @@ const QRModel = {
    * Create a new QR code record.
    * MySQL generates the UUID via DEFAULT (UUID()).
    */
-  async create({ form_id, public_url, qr_image_path }) {
+  async create({ form_id, public_url }) {
     const pool = getPool();
 
     await pool.query(
-      `INSERT INTO qr_codes (form_id, public_url, qr_image_path) VALUES (?, ?, ?)`,
-      [form_id, public_url, qr_image_path || null]
+      `INSERT INTO qr_codes (form_id, public_url) VALUES (?, ?)`,
+      [form_id, public_url]
     );
 
     // Retrieve the row we just inserted
@@ -48,18 +54,6 @@ const QRModel = {
     );
 
     return rows[0];
-  },
-
-  /**
-   * Update QR image path for an existing record.
-   */
-  async updateImagePath(formId, qrImagePath) {
-    const pool = getPool();
-    await pool.query(
-      `UPDATE qr_codes SET qr_image_path = ? WHERE form_id = ?`,
-      [qrImagePath, formId]
-    );
-    return this.findByFormId(formId);
   },
 
   /**

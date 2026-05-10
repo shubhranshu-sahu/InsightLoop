@@ -569,8 +569,8 @@ function getFormPage(form) {
       hidden.value = btn.dataset.value;
     }
 
-    // Form Submit (dummy — shows success overlay)
-    function handleSubmit(e) {
+    // Form Submit — POST to /api/responses/submit (MongoDB Atlas)
+    async function handleSubmit(e) {
       e.preventDefault();
 
       const form = e.target;
@@ -596,10 +596,46 @@ function getFormPage(form) {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
 
-      // Simulate submission delay
-      setTimeout(() => {
-        document.getElementById('successOverlay').classList.add('visible');
-      }, 800);
+      // Collect answers keyed by question_id
+      const answers = {};
+      const formData = new FormData(form);
+      for (const [key, val] of formData.entries()) {
+        if (key.startsWith('q_')) {
+          const questionId = key.replace('q_', '');
+          // Convert numeric strings and yes/no to proper types
+          let value = val;
+          if (val === 'yes') value = true;
+          else if (val === 'no') value = false;
+          else if (!isNaN(val) && val !== '') value = Number(val);
+          answers[questionId] = { value };
+        }
+      }
+
+      try {
+        const response = await fetch('/api/responses/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            form_id: '${form.form_id}',
+            answers
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          document.getElementById('successOverlay').classList.add('visible');
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Feedback';
+          alert(data.error || 'Something went wrong. Please try again.');
+        }
+      } catch (err) {
+        console.error('Submission error:', err);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Feedback';
+        alert('Network error. Please check your connection and try again.');
+      }
     }
   </script>
 </body>

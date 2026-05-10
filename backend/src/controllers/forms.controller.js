@@ -47,11 +47,10 @@ const createForm = async (req, res, next) => {
       insertedQuestions.push(question);
     }
 
-    // 3. Generate QR code for this form (persists to qr_codes table + saves image file)
+    // 3. Generate QR code record for this form (URL only — frontend generates the image)
     const qrData = await generateQR(form.form_id);
 
     // 4. Build and return the response
-    const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
     res.status(201).json({
       message: 'Form created successfully.',
       form: {
@@ -66,8 +65,6 @@ const createForm = async (req, res, next) => {
       qr_code: {
         qr_id: qrData.qr_id,
         public_url: qrData.public_url,
-        qr_image_url: `${BASE_URL}${qrData.qr_image_path}`,
-        qr_data_url: qrData.qr_data_url,
         created_at: qrData.created_at,
       },
     });
