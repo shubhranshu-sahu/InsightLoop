@@ -1,11 +1,23 @@
 /**
  * InsightLoop — Landing Page Interactions
  * =========================================
- * Handles: navbar scroll effect, scroll reveal animations, and mouse glow.
- * No framework — pure vanilla JS.
+ * Handles:
+ *   - Lucide icon initialization
+ *   - Navbar scroll effect
+ *   - Scroll reveal animations (staggered for cards/steps)
+ *   - Animated stats counter
+ *   - Mouse glow on feature cards
+ *   - Smooth anchor scroll
  */
 
-// ── Navbar scroll effect ────────────────────────────────────────────────────
+
+// ── Lucide icons ────────────────────────────────────────────────────────────
+if (window.lucide) {
+  window.lucide.createIcons();
+}
+
+
+// ── Navbar scroll effect ─────────────────────────────────────────────────────
 
 const nav = document.querySelector('.landing-nav');
 if (nav) {
@@ -15,73 +27,102 @@ if (nav) {
 }
 
 
-// ── Scroll reveal animation ─────────────────────────────────────────────────
-// Elements with class "reveal" fade in when they enter the viewport.
+// ── Scroll reveal (generic) ───────────────────────────────────────────────────
+// Elements with class "reveal" animate in when entering the viewport.
 
-const revealElements = document.querySelectorAll('.reveal');
-
-if (revealElements.length > 0) {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('active');
-        observer.unobserve(entry.target);  // Only animate once
-      }
-    });
-  }, {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px',
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('active');
+      revealObserver.unobserve(entry.target);
+    }
   });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
-  revealElements.forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+
+// ── Staggered reveal for feature cards ───────────────────────────────────────
+
+const cardObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      // Find index among siblings for stagger offset
+      const siblings = [...entry.target.parentElement.children];
+      const i = siblings.indexOf(entry.target);
+      setTimeout(() => entry.target.classList.add('active'), i * 90);
+      cardObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.feature-card, .step').forEach(el => {
+  el.classList.add('reveal');
+  cardObserver.observe(el);
+});
+
+
+// ── Animated stats counter ────────────────────────────────────────────────────
+// Counts up from 0 to data-target when the stats strip enters viewport.
+
+function animateCounter(el, target, duration = 1800) {
+  const start = performance.now();
+  const update = (now) => {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.floor(eased * target);
+    if (progress < 1) requestAnimationFrame(update);
+    else el.textContent = target;
+  };
+  requestAnimationFrame(update);
 }
 
-
-// ── Staggered reveal for feature cards ──────────────────────────────────────
-
-const featureCards = document.querySelectorAll('.feature-card');
-if (featureCards.length > 0) {
-  const cardObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry, i) => {
-      if (entry.isIntersecting) {
-        // Stagger: each card fades in 100ms after the previous
-        setTimeout(() => {
-          entry.target.classList.add('active');
-        }, i * 100);
-        cardObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1 });
-
-  featureCards.forEach(card => {
-    card.classList.add('reveal');
-    cardObserver.observe(card);
+const statsObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.querySelectorAll('.stat-number[data-target]').forEach(el => {
+        const target = parseInt(el.dataset.target, 10);
+        animateCounter(el, target);
+      });
+      statsObserver.unobserve(entry.target);
+    }
   });
-}
+}, { threshold: 0.3 });
+
+const statsStrip = document.querySelector('.stats-strip');
+if (statsStrip) statsObserver.observe(statsStrip);
 
 
-// ── Mouse glow effect on feature cards ──────────────────────────────────────
-// Cards have a subtle radial gradient that follows the mouse cursor.
+// ── Mouse glow on feature cards ───────────────────────────────────────────────
 
 document.querySelectorAll('.feature-card').forEach(card => {
   card.addEventListener('mousemove', (e) => {
     const rect = card.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const x = ((e.clientX - rect.left) / rect.width)  * 100;
+    const y = ((e.clientY - rect.top)  / rect.height) * 100;
     card.style.setProperty('--mouse-x', `${x}%`);
     card.style.setProperty('--mouse-y', `${y}%`);
   });
 });
 
 
-// ── Smooth scroll for anchor links ──────────────────────────────────────────
+// ── Smooth anchor scroll ──────────────────────────────────────────────────────
 
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', (e) => {
     e.preventDefault();
     const target = document.querySelector(anchor.getAttribute('href'));
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 });
+
+
+// ── Smooth scroll for "See How It Works" on history state ────────────────────
+
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('ref') === 'how') {
+  document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+  history.replaceState(null, '', window.location.pathname);
+}

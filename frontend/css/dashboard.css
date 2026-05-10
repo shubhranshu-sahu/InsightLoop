@@ -65,24 +65,24 @@
  */
 
 @keyframes shimmer {
-  0% {
-    background-position: -800px 0;
-  }
-
-  100% {
-    background-position: 800px 0;
-  }
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
 }
 
 .skeleton {
-  background: linear-gradient(90deg,
-      var(--bg-raised) 0%,
-      var(--bg-hover) 50%,
-      var(--bg-raised) 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04)  0%,
+    rgba(255,255,255,0.10)  35%,
+    rgba(255,255,255,0.18)  50%,
+    rgba(255,255,255,0.10)  65%,
+    rgba(255,255,255,0.04)  100%
+  );
   background-size: 800px 100%;
-  animation: shimmer 1.5s infinite linear;
+  animation: shimmer 1.5s linear infinite;
   border-radius: var(--radius-md);
   color: transparent !important;
+  border-color: transparent !important;
   pointer-events: none;
   user-select: none;
 }
@@ -90,6 +90,36 @@
 .skeleton * {
   visibility: hidden;
 }
+
+/* ── Chart Skeleton Shapes ─────────────────────────────────────────────────── */
+/* Line chart: stacked horizontal bars at varying heights to mimic line chart */
+.chart-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 1.5rem 1rem;
+  gap: 1rem;
+}
+
+.chart-skel-line {
+  border-radius: var(--radius-full) !important;
+  align-self: stretch;
+}
+
+/* Bar chart skeleton: horizontal bars of varying widths */
+.chart-skeleton-bars {
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 0.875rem;
+}
+
+.chart-skel-bar {
+  height: 22px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
 
 
 /* ── Error / Empty State ───────────────────────────────────────────────────── */
@@ -154,55 +184,58 @@
 .stat-card {
   background: var(--bg-raised);
   border: 1px solid var(--border);
+  border-top: 2px solid transparent;   /* accent top on hover */
   border-radius: var(--radius-xl);
-  padding: 1.25rem 1.5rem;
+  padding: 1.375rem 1.25rem 1.125rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0;
+  position: relative;
+  overflow: hidden;
   transition: transform var(--duration-normal) var(--ease-out),
-    border-color var(--duration-normal) var(--ease-out),
-    box-shadow var(--duration-normal) var(--ease-out);
+              border-color var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
   cursor: default;
 }
 
 .stat-card:hover {
   transform: translateY(-3px);
+  border-top-color: var(--primary);
   border-color: var(--border-hover);
+  border-top-color: var(--primary);
   box-shadow: var(--shadow-md);
 }
 
-/* Clickable cards (e.g., alerts card scrolls to alerts section) */
-.stat-card.clickable {
-  cursor: pointer;
-}
+.stat-card.clickable { cursor: pointer; }
 
-/* Header row: icon left, badge right */
+/* ── Top row: icon + badge ─────────────────────────────────────────────────── */
 .stat-card-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
+  margin-bottom: 1rem;
 }
 
-/* Icon wrapper */
+/* Rounded square icon wrapper */
 .stat-card-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-lg);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--gradient-subtle);
-  border: 1px solid rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.15);
   flex-shrink: 0;
 }
 
 .stat-card-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   color: var(--primary-light);
 }
 
-/* Red unread-count badge on the alert card */
+/* Alert count badge */
 .stat-badge {
   background: var(--danger);
   color: white;
@@ -215,39 +248,49 @@
   align-items: center;
   justify-content: center;
   padding: 0 5px;
+  animation: pulseBadge 2s ease-in-out infinite;
 }
 
-/* Big number */
+@keyframes pulseBadge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50%       { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+}
+
+/* ── Big value number ──────────────────────────────────────────────────────── */
 .stat-card-value {
-  font-size: 1.875rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
   color: var(--text-primary);
   line-height: 1;
+  margin-bottom: 0.5rem;
 }
 
-.stat-card-value.danger {
-  color: var(--danger);
-}
+.stat-card-value.danger { color: var(--danger); }
 
-/* Footer row: label left, delta/context right */
+/* ── Bottom row: label + context/delta ─────────────────────────────────────── */
 .stat-card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.375rem;
+  flex-wrap: wrap;
 }
 
 .stat-card-label {
   font-size: 0.75rem;
-  color: var(--text-muted);
   font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .stat-card-context {
-  font-size: 0.75rem;
+  font-size: 0.688rem;
   font-weight: 500;
   color: var(--text-muted);
+  background: var(--bg-surface);
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.5rem;
   white-space: nowrap;
 }
 
@@ -256,26 +299,21 @@
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  font-size: 0.75rem;
+  font-size: 0.688rem;
   font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
 }
 
-.stat-delta.up {
-  color: var(--success);
-}
+.stat-delta.up   { color: var(--success); background: var(--success-bg); }
+.stat-delta.down { color: var(--danger);  background: var(--danger-bg);  }
 
-.stat-delta.down {
-  color: var(--danger);
-}
+.stat-delta svg { width: 12px; height: 12px; }
 
-.stat-delta svg {
-  width: 13px;
-  height: 13px;
-}
-
-/* Skeleton placeholder size */
+/* ── Skeleton state ────────────────────────────────────────────────────────── */
 .stat-card.skeleton {
-  height: 130px;
+  height: 140px;
+  border-top-color: transparent;
 }
 
 

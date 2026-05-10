@@ -8,15 +8,13 @@
   <meta name="description"
     content="Turn customer feedback into actionable intelligence. InsightLoop uses AI to analyze feedback in real-time, detect sentiment, and help you make data-driven decisions.">
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/images/logo.png">
-
-  <!-- Bootstrap 5.3 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Styles -->
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/landing.css">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 
 <body>
@@ -34,12 +32,13 @@
       <ul class="nav-links">
         <li><a href="#features">Features</a></li>
         <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#stats">Impact</a></li>
         <li><a href="#cta">Get Started</a></li>
       </ul>
 
       <div class="nav-actions">
         <a href="pages/login.html" class="btn-ghost">Log In</a>
-        <a href="pages/register.html" class="btn-brand">Get Started</a>
+        <a href="pages/register.html" class="btn-brand">Get Started Free</a>
       </div>
     </div>
   </nav>
@@ -74,15 +73,47 @@
       <div class="hero-buttons">
         <a href="pages/register.html" class="btn-brand">
           Start Free Today
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
+          <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
         </a>
         <a href="#features" class="btn-ghost">See How It Works</a>
       </div>
+
+      <!-- Live pulse indicators — purely visual -->
+      <div class="hero-indicators">
+        <div class="indicator">
+          <span class="indicator-dot success"></span>
+          <span>AI Analysis Active</span>
+        </div>
+        <div class="indicator">
+          <span class="indicator-dot warning"></span>
+          <span>2 Alerts Detected</span>
+        </div>
+        <div class="indicator">
+          <span class="indicator-dot info"></span>
+          <span>Live Feedback Streaming</span>
+        </div>
+      </div>
     </div>
   </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SOCIAL PROOF TICKER
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="ticker-wrap">
+    <div class="ticker-track">
+      <span class="ticker-item"><i data-lucide="star"></i> "Complaints dropped 40% in 2 weeks" — Café Owner</span>
+      <span class="ticker-item"><i data-lucide="trending-up"></i> 1,200+ feedback responses analyzed today</span>
+      <span class="ticker-item"><i data-lucide="zap"></i> AI detects urgency in under 3 seconds</span>
+      <span class="ticker-item"><i data-lucide="message-circle"></i> "Best decision we made for our restaurant" — Chain Manager</span>
+      <span class="ticker-item"><i data-lucide="shield-check"></i> 98.7% sentiment accuracy</span>
+      <span class="ticker-item"><i data-lucide="star"></i> "Complaints dropped 40% in 2 weeks" — Café Owner</span>
+      <span class="ticker-item"><i data-lucide="trending-up"></i> 1,200+ feedback responses analyzed today</span>
+      <span class="ticker-item"><i data-lucide="zap"></i> AI detects urgency in under 3 seconds</span>
+      <span class="ticker-item"><i data-lucide="message-circle"></i> "Best decision we made for our restaurant" — Chain Manager</span>
+      <span class="ticker-item"><i data-lucide="shield-check"></i> 98.7% sentiment accuracy</span>
+    </div>
+  </div>
 
 
   <!-- ═══════════════════════════════════════════════════════════════════════
@@ -96,45 +127,106 @@
     </div>
 
     <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">📋</div>
-        <h3>Dynamic Form Builder</h3>
-        <p>Create feedback forms with ratings, text fields, and yes/no questions. Each form gets a unique QR code your
-          customers can scan.</p>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon-wrap">
+          <i data-lucide="layout-template"></i>
+        </div>
+        <div class="feature-body">
+          <h3>Dynamic Form Builder</h3>
+          <p>Create feedback forms with ratings, text fields, and yes/no questions. Each form gets a unique QR code
+            customers can scan instantly.</p>
+          <span class="feature-tag">QR Generated Automatically</span>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">🤖</div>
-        <h3>AI Sentiment Analysis</h3>
-        <p>Every response is analyzed by AI in real-time — detecting sentiment, urgency, topics, and key phrases without
-          any manual work.</p>
+      <div class="feature-card reveal">
+        <div class="feature-icon-wrap accent">
+          <i data-lucide="brain-circuit"></i>
+        </div>
+        <div class="feature-body">
+          <h3>AI Sentiment Analysis</h3>
+          <p>Every response analyzed in real-time — detecting sentiment, urgency, key topics, and complaint flags with
+            zero manual effort.</p>
+          <span class="feature-tag">Powered by LangGraph</span>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">💬</div>
-        <h3>Chat With Your Data</h3>
-        <p>Ask questions in plain English. "What are the top complaints this month?" — get instant answers backed by
-          real customer feedback.</p>
+      <div class="feature-card reveal">
+        <div class="feature-icon-wrap success">
+          <i data-lucide="bot"></i>
+        </div>
+        <div class="feature-body">
+          <h3>Chat With Your Data</h3>
+          <p>Ask anything in plain English — "What are the top complaints this month?" Get instant, cited answers backed
+            by real customer feedback.</p>
+          <span class="feature-tag">Context-Aware AI Chat</span>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h3>Real-Time Dashboard</h3>
-        <p>Track sentiment trends, urgency spikes, and response volume at a glance. See what matters before it becomes a
-          problem.</p>
+      <div class="feature-card reveal">
+        <div class="feature-icon-wrap warning">
+          <i data-lucide="area-chart"></i>
+        </div>
+        <div class="feature-body">
+          <h3>Real-Time Dashboard</h3>
+          <p>Sentiment trends, urgency breakdowns, and response volumes — all at a glance. See what's worsening before
+            it becomes a crisis.</p>
+          <span class="feature-tag">Live Analytics</span>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">🚨</div>
-        <h3>Smart Alerts</h3>
-        <p>Get notified when high-urgency complaints spike. No more discovering bad reviews days after they happen.</p>
+      <div class="feature-card reveal">
+        <div class="feature-icon-wrap danger">
+          <i data-lucide="bell-ring"></i>
+        </div>
+        <div class="feature-body">
+          <h3>Smart Alerts</h3>
+          <p>Get notified the moment high-urgency complaints spike. No more discovering bad reviews days after they
+            happened.</p>
+          <span class="feature-tag">Instant Notifications</span>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">📱</div>
-        <h3>QR Code Collection</h3>
-        <p>Print QR codes for tables, receipts, or walls. Customers scan, fill a form, and you get instant AI-analyzed
-          insights.</p>
+      <div class="feature-card reveal">
+        <div class="feature-icon-wrap info">
+          <i data-lucide="scan-qr-code"></i>
+        </div>
+        <div class="feature-body">
+          <h3>QR Code Collection</h3>
+          <p>Print QR codes for tables, receipts, or walls. Customers scan, fill a short form, and you get AI-analyzed
+            insights in seconds.</p>
+          <span class="feature-tag">Zero-friction Collection</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       STATS STRIP
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="stats-strip" id="stats">
+    <div class="stats-inner reveal">
+      <div class="stat-item">
+        <span class="stat-number" data-target="98">0</span><span class="stat-unit">%</span>
+        <span class="stat-label">Sentiment Accuracy</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number" data-target="3">0</span><span class="stat-unit">s</span>
+        <span class="stat-label">Avg Analysis Time</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number" data-target="40">0</span><span class="stat-unit">%</span>
+        <span class="stat-label">Fewer Missed Complaints</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number" data-target="2">0</span><span class="stat-unit">min</span>
+        <span class="stat-label">Setup Time</span>
       </div>
     </div>
   </section>
@@ -151,32 +243,66 @@
     </div>
 
     <div class="steps">
+
       <div class="step reveal">
-        <div class="step-number">01</div>
+        <div class="step-left">
+          <div class="step-number">01</div>
+          <div class="step-line"></div>
+        </div>
         <div class="step-content">
+          <div class="step-icon">
+            <i data-lucide="file-plus-2"></i>
+          </div>
           <h3>Create Your Feedback Form</h3>
-          <p>Design your form with the questions that matter. Choose from rating scales, text responses, and yes/no
-            questions. A unique QR code is generated automatically.</p>
+          <p>Design your form with ratings, text responses, and yes/no questions. A unique QR code is generated
+            automatically — print it, share it, or embed it anywhere.</p>
+          <ul class="step-bullets">
+            <li><i data-lucide="check-circle-2"></i> Multiple question types</li>
+            <li><i data-lucide="check-circle-2"></i> Instant QR code generation</li>
+            <li><i data-lucide="check-circle-2"></i> Set up in under 2 minutes</li>
+          </ul>
         </div>
       </div>
 
       <div class="step reveal">
-        <div class="step-number">02</div>
+        <div class="step-left">
+          <div class="step-number">02</div>
+          <div class="step-line"></div>
+        </div>
         <div class="step-content">
-          <h3>Collect & Analyze Automatically</h3>
-          <p>Customers scan the QR code, fill the form, and AI processes every response instantly — extracting
-            sentiment, urgency, topics, and key phrases. No manual tagging ever.</p>
+          <div class="step-icon accent">
+            <i data-lucide="cpu"></i>
+          </div>
+          <h3>Collect &amp; Analyze Automatically</h3>
+          <p>Customers scan the QR code and fill the form. The AI pipeline processes every response instantly —
+            extracting sentiment, urgency, topics, and key phrases. No manual tagging, ever.</p>
+          <ul class="step-bullets">
+            <li><i data-lucide="check-circle-2"></i> Real-time AI processing</li>
+            <li><i data-lucide="check-circle-2"></i> Sentiment &amp; urgency detection</li>
+            <li><i data-lucide="check-circle-2"></i> Auto complaint flagging</li>
+          </ul>
         </div>
       </div>
 
       <div class="step reveal">
-        <div class="step-number">03</div>
+        <div class="step-left">
+          <div class="step-number">03</div>
+        </div>
         <div class="step-content">
+          <div class="step-icon success">
+            <i data-lucide="message-square-dot"></i>
+          </div>
           <h3>Chat, Decide, Improve</h3>
-          <p>Open the AI chat and ask anything about your feedback. "What are customers complaining about?" "Is food
-            quality improving?" Get cited, data-backed answers in seconds.</p>
+          <p>Open the AI chat and ask anything about your feedback data. Get cited, data-backed answers in seconds — and
+            watch your business improve with every insight.</p>
+          <ul class="step-bullets">
+            <li><i data-lucide="check-circle-2"></i> Plain English questions</li>
+            <li><i data-lucide="check-circle-2"></i> Cited, evidence-backed answers</li>
+            <li><i data-lucide="check-circle-2"></i> Tracks improvements over time</li>
+          </ul>
         </div>
       </div>
+
     </div>
   </section>
 
@@ -186,15 +312,27 @@
        ═══════════════════════════════════════════════════════════════════════ -->
   <section class="cta-section" id="cta">
     <div class="cta-box reveal">
-      <h2>Ready to Listen to What Your Customers Are Really Saying?</h2>
-      <p>Set up your first feedback form in under 2 minutes. No credit card required.</p>
-      <a href="pages/register.html" class="btn-brand">
-        Create Your Free Account
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round" />
-        </svg>
-      </a>
+      <div class="cta-bg-orbs">
+        <div class="cta-orb cta-orb-1"></div>
+        <div class="cta-orb cta-orb-2"></div>
+      </div>
+      <div class="cta-content">
+        <span class="section-tag">Get Started Today</span>
+        <h2>Ready to Listen to What Your Customers Are Really Saying?</h2>
+        <p>Set up your first feedback form in under 2 minutes. No credit card required.</p>
+        <div class="cta-buttons">
+          <a href="pages/register.html" class="btn-brand">
+            Create Free Account
+            <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+          </a>
+          <a href="pages/login.html" class="btn-ghost">Already have an account?</a>
+        </div>
+        <div class="cta-trust">
+          <span><i data-lucide="shield-check"></i> No credit card</span>
+          <span><i data-lucide="clock"></i> 2-minute setup</span>
+          <span><i data-lucide="lock"></i> Data stays private</span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -203,13 +341,24 @@
        FOOTER
        ═══════════════════════════════════════════════════════════════════════ -->
   <footer class="landing-footer">
-    <p>&copy; 2026 InsightLoop. Built with ❤️ for smarter business decisions.</p>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="assets/images/logo.png" alt="InsightLoop" width="28">
+        <span>Insight<span class="text-gradient">Loop</span></span>
+      </div>
+      <p>&copy; 2026 InsightLoop. Built for smarter business decisions.</p>
+      <div class="footer-links">
+        <a href="pages/login.html">Login</a>
+        <a href="pages/register.html">Register</a>
+      </div>
+    </div>
   </footer>
 
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" src="js/landing.js"></script>
+  <script src="js/landing.js"></script>
+
 </body>
 
 </html>

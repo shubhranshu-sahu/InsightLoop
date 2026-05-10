@@ -282,17 +282,19 @@ function renderTrendChart(trend) {
     if (!wrapper) return;
 
     if (!trend || trend.length === 0) {
+        // Hide skeleton, show error
+        wrapper.querySelector('.chart-skeleton')?.remove();
+        const canvas = wrapper.querySelector('canvas');
+        if (canvas) canvas.style.display = 'none';
         showStateBox(wrapper, 'empty', 'No data for this period.');
         return;
     }
 
-    // Restore canvas if it was replaced by a state-box
-    if (!wrapper.querySelector('canvas')) {
-        wrapper.innerHTML = '<canvas id="sentiment-trend-chart"></canvas>';
-    }
-
+    // Hide skeleton div, reveal canvas
+    wrapper.querySelector('.chart-skeleton')?.remove();
     const canvas = document.getElementById('sentiment-trend-chart');
     if (!canvas) return;
+    canvas.style.display = '';
 
     if (sentimentChart) {
         sentimentChart.destroy();
@@ -401,10 +403,19 @@ function renderUrgencyChart(urgency) {
     const legend = document.getElementById('urgency-legend');
     if (!wrapper) return;
     const total = (urgency.low || 0) + (urgency.medium || 0) + (urgency.high || 0);
-    if (total === 0) { showStateBox(wrapper, 'empty', 'No urgency data for the last 30 days.'); return; }
-    if (!wrapper.querySelector('canvas')) wrapper.innerHTML = '<canvas id="urgency-donut-chart"></canvas>';
+    if (total === 0) {
+        wrapper.querySelector('.skeleton')?.remove();
+        const canvas = wrapper.querySelector('canvas');
+        if (canvas) canvas.style.display = 'none';
+        showStateBox(wrapper, 'empty', 'No urgency data for the last 30 days.');
+        return;
+    }
+    // Remove skeleton circle, reveal canvas
+    wrapper.querySelector('.skeleton')?.remove();
+    if (legend) legend.innerHTML = ''; // clear skeleton legend rows
     const canvas = document.getElementById('urgency-donut-chart');
     if (!canvas) return;
+    canvas.style.display = '';
     if (urgencyChart) { urgencyChart.destroy(); urgencyChart = null; }
     const COLORS = ['#3b82f6', '#f59e0b', '#ef4444'];
     const labels = ['Low', 'Medium', 'High'];
@@ -436,10 +447,18 @@ function renderUrgencyChart(urgency) {
 function renderTopicsChart(topics) {
     const wrapper = document.getElementById('topics-chart-wrapper');
     if (!wrapper) return;
-    if (!topics || topics.length === 0) { showStateBox(wrapper, 'empty', 'Topics will appear once feedback is analyzed.'); return; }
-    if (!wrapper.querySelector('canvas')) wrapper.innerHTML = '<canvas id="topics-bar-chart"></canvas>';
+    if (!topics || topics.length === 0) {
+        wrapper.querySelector('.chart-skeleton')?.remove();
+        const canvas = wrapper.querySelector('canvas');
+        if (canvas) canvas.style.display = 'none';
+        showStateBox(wrapper, 'empty', 'Topics will appear once feedback is analyzed.');
+        return;
+    }
+    // Remove skeleton bars, reveal canvas
+    wrapper.querySelector('.chart-skeleton')?.remove();
     const canvas = document.getElementById('topics-bar-chart');
     if (!canvas) return;
+    canvas.style.display = '';
     if (topicsChart) { topicsChart.destroy(); topicsChart = null; }
     topicsChart = new Chart(canvas, {
         type: 'bar',
@@ -624,14 +643,24 @@ async function initDashboard() {
     } else {
         const msg = dashResult.reason?.message || 'API unavailable';
         showStateBox(document.getElementById('stat-grid'), 'error', `Could not load dashboard stats: ${msg}`);
-        showStateBox(document.getElementById('urgency-chart-wrapper'), 'error', `API unavailable: ${msg}`);
-        showStateBox(document.getElementById('topics-chart-wrapper'), 'error', `API unavailable: ${msg}`);
+        // Clear chart skeletons before showing error
+        const urgencyWrap = document.getElementById('urgency-chart-wrapper');
+        urgencyWrap?.querySelector('.skeleton')?.remove();
+        urgencyWrap?.querySelector('canvas')?.remove();
+        showStateBox(urgencyWrap, 'error', `API unavailable: ${msg}`);
+        const topicsWrap = document.getElementById('topics-chart-wrapper');
+        topicsWrap?.querySelector('.chart-skeleton')?.remove();
+        topicsWrap?.querySelector('canvas')?.remove();
+        showStateBox(topicsWrap, 'error', `API unavailable: ${msg}`);
     }
 
     if (trendResult.status === 'fulfilled') {
         renderTrendChart(trendResult.value.trend || []);
     } else {
-        showStateBox(document.getElementById('trend-chart-wrapper'), 'error',
+        const trendWrap = document.getElementById('trend-chart-wrapper');
+        trendWrap?.querySelector('.chart-skeleton')?.remove();
+        trendWrap?.querySelector('canvas')?.remove();
+        showStateBox(trendWrap, 'error',
             `Could not load trend data: ${trendResult.reason?.message || 'API unavailable'}`);
     }
 
