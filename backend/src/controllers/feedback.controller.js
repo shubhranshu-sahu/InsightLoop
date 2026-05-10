@@ -65,13 +65,6 @@ const submitFeedback = async (req, res, next) => {
             text_answers: textAnswers,
             rating: ratingAnswer ? Number(ratingAnswer.answer_value) : null,
           })
-          .then(async (aiResponse) => {
-            // Save AI analysis results to MySQL
-            await FeedbackModel.saveAnalysis({
-              response_id: response.response_id,
-              ...aiResponse.data,
-            });
-          })
           .catch((err) => {
             console.error('AI analysis failed (non-blocking):', err.message);
           });
