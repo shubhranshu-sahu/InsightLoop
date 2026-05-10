@@ -12,7 +12,7 @@
 // ── Constants ───────────────────────────────────────────────────────────────
 
 /** Node.js backend base URL */
-export const API_BASE = 'http://localhost:5000';
+export const API_BASE = 'https://insightloop-backend.onrender.com';
 
 /** Key used to store JWT in localStorage */
 const TOKEN_KEY = 'insightloop_token';
