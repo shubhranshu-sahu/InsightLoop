@@ -40,8 +40,48 @@
         <a href="pages/login.html" class="btn-ghost">Log In</a>
         <a href="pages/register.html" class="btn-brand">Get Started Free</a>
       </div>
+
+      <!-- Hamburger — visible only on mobile via CSS -->
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Open navigation menu" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="6" x2="20" y2="6" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="4" y1="18" x2="20" y2="18" />
+        </svg>
+      </button>
     </div>
   </nav>
+
+  <!-- Mobile Nav Drawer -->
+  <div class="mobile-nav-drawer" id="mobile-nav-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu">
+    <div class="mobile-nav-header">
+      <a href="/" class="logo"
+        style="font-size:1.125rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:0.625rem;text-decoration:none;">
+        <img src="assets/images/logo.png" alt="InsightLoop" style="width:30px;height:30px;border-radius:4px;">
+        Insight<span class="text-gradient">Loop</span>
+      </a>
+      <button class="mobile-nav-close" id="mobile-nav-close" aria-label="Close navigation menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+
+    <ul class="mobile-nav-links">
+      <li><a href="#features" onclick="closeMobileNav()">Features</a></li>
+      <li><a href="#how-it-works" onclick="closeMobileNav()">How It Works</a></li>
+      <li><a href="#stats" onclick="closeMobileNav()">Impact</a></li>
+      <li><a href="#cta" onclick="closeMobileNav()">Get Started</a></li>
+    </ul>
+
+    <div class="mobile-nav-actions">
+      <a href="pages/login.html" class="btn-ghost">Log In</a>
+      <a href="pages/register.html" class="btn-brand">Get Started Free</a>
+    </div>
+  </div>
 
 
   <!-- ═══════════════════════════════════════════════════════════════════════
@@ -105,12 +145,14 @@
       <span class="ticker-item"><i data-lucide="star"></i> "Complaints dropped 40% in 2 weeks" — Café Owner</span>
       <span class="ticker-item"><i data-lucide="trending-up"></i> 1,200+ feedback responses analyzed today</span>
       <span class="ticker-item"><i data-lucide="zap"></i> AI detects urgency in under 3 seconds</span>
-      <span class="ticker-item"><i data-lucide="message-circle"></i> "Best decision we made for our restaurant" — Chain Manager</span>
+      <span class="ticker-item"><i data-lucide="message-circle"></i> "Best decision we made for our restaurant" — Chain
+        Manager</span>
       <span class="ticker-item"><i data-lucide="shield-check"></i> 98.7% sentiment accuracy</span>
       <span class="ticker-item"><i data-lucide="star"></i> "Complaints dropped 40% in 2 weeks" — Café Owner</span>
       <span class="ticker-item"><i data-lucide="trending-up"></i> 1,200+ feedback responses analyzed today</span>
       <span class="ticker-item"><i data-lucide="zap"></i> AI detects urgency in under 3 seconds</span>
-      <span class="ticker-item"><i data-lucide="message-circle"></i> "Best decision we made for our restaurant" — Chain Manager</span>
+      <span class="ticker-item"><i data-lucide="message-circle"></i> "Best decision we made for our restaurant" — Chain
+        Manager</span>
       <span class="ticker-item"><i data-lucide="shield-check"></i> 98.7% sentiment accuracy</span>
     </div>
   </div>
@@ -358,6 +400,31 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/landing.js"></script>
+
+  <script>
+    // ── Mobile nav drawer ─────────────────────────────────────────────────────
+    const drawer = document.getElementById('mobile-nav-drawer');
+    const hamburger = document.getElementById('nav-hamburger');
+    const closeBtn = document.getElementById('mobile-nav-close');
+
+    function openMobileNav() {
+      drawer.classList.add('open');
+      hamburger.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileNav() {
+      drawer.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+
+    hamburger?.addEventListener('click', openMobileNav);
+    closeBtn?.addEventListener('click', closeMobileNav);
+
+    // Close on ESC
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileNav(); });
+  </script>
 
 </body>
 

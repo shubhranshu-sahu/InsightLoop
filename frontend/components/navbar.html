@@ -14,6 +14,14 @@
 <header class="topbar" id="topbar">
   <div class="topbar-inner">
 
+    <!-- ── Hamburger — mobile only ────────────────────────────────────── -->
+    <button class="topbar-hamburger" id="topbar-hamburger" aria-label="Open sidebar" onclick="document.body.classList.toggle('sidebar-open')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
+      </svg>
+    </button>
+
     <!-- ── Page Title ──────────────────────────────────────────────────── -->
     <h2 class="topbar-title" id="page-title"></h2>
 
@@ -106,6 +114,35 @@
     line-height: 1;
   }
 
+  /* Hamburger button — hidden on desktop, shown on mobile */
+  .topbar-hamburger {
+    display: none;
+    background: none;
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-md);
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all var(--duration-fast);
+  }
+
+  .topbar-hamburger:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .topbar-hamburger svg { width: 20px; height: 20px; }
+
+  @media (max-width: 768px) {
+    .topbar-hamburger { display: flex; }
+    .topbar-title { font-size: 0.9375rem; }
+    .topbar-user span { display: none; } /* Hide name text, keep icon */
+  }
+
   /* Business name */
   .topbar-user {
     display: flex;
@@ -135,6 +172,21 @@
       } catch {
         // Non-critical — just leave it blank
       }
+    }
+  })();
+</script>
+<script>
+  // Hamburger sidebar toggle (safe fallback - runs after component injection)
+  (function() {
+    var btn = document.getElementById('topbar-hamburger');
+    if (btn && !btn._hamburgerBound) {
+      btn._hamburgerBound = true;
+      btn.addEventListener('click', function() {
+        document.body.classList.toggle('sidebar-open');
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') document.body.classList.remove('sidebar-open');
+      });
     }
   })();
 </script>

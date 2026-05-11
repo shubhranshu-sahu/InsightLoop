@@ -60,17 +60,8 @@
             </div>
           </div>
 
-          <button type="submit" class="btn-brand" id="login-btn">
+          <button type="submit" class="btn-brand" id="login-btn" style="width:100%;">
             Log In
-          </button>
-
-          <!-- DEV MODE: Bypass Auth for UI Testing -->
-          <button type="button" class="btn-ghost" style="width: 100%; margin-top: 1rem;" onclick="
-            localStorage.setItem('insightloop_token', 'dev-token');
-            localStorage.setItem('insightloop_user', JSON.stringify({ name: 'Dev User', email: 'dev@test.com' }));
-            window.location.href = 'dashboard.html';
-          ">
-            Bypass Login (UI Dev Mode)
           </button>
         </form>
 

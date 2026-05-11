@@ -218,7 +218,42 @@ export async function loadComponent(selector, url) {
       oldScript.parentNode.replaceChild(newScript, oldScript);
     });
 
+    // After injection: call sidebar highlight if available
+    if (typeof window.__markActiveSidebarLink === 'function') {
+      window.__markActiveSidebarLink();
+    }
+
   } catch (err) {
     console.warn(`Failed to load component: ${url}`, err);
   }
 }
+
+
+// ── Mobile Sidebar Drawer — Event Delegation ─────────────────────────────────
+// Using event delegation on `document` so this works even when the hamburger
+// button and sidebar are injected asynchronously via loadComponent/innerHTML.
+// This is the ONLY reliable way to handle clicks on dynamically injected elements.
+
+document.addEventListener('click', function (e) {
+  // Hamburger tap → toggle sidebar open/close
+  if (e.target.closest('#topbar-hamburger')) {
+    document.body.classList.toggle('sidebar-open');
+    return;
+  }
+
+  // Backdrop tap → close sidebar
+  if (e.target.closest('#sidebar-backdrop')) {
+    document.body.classList.remove('sidebar-open');
+    return;
+  }
+
+  // Sidebar nav link tap on mobile → close sidebar
+  if (window.innerWidth <= 768 && e.target.closest('.sidebar-link')) {
+    document.body.classList.remove('sidebar-open');
+  }
+});
+
+// ESC key → close sidebar
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') document.body.classList.remove('sidebar-open');
+});

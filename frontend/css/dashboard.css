@@ -835,3 +835,9 @@
     font-size: 1.5rem;
   }
 }
+/* chart-row + table scroll — mobile */
+@media (max-width: 768px) {
+  .chart-row { grid-template-columns: 1fr !important; }
+  .section-title-row { flex-wrap: wrap; gap: 0.5rem; }
+}
+

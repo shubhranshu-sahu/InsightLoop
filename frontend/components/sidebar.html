@@ -187,10 +187,33 @@
     min-height: 100vh;
   }
 
+  /* ── Sidebar backdrop (mobile tap-to-close overlay) ─────────────────── */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 49;
+    cursor: pointer;
+  }
+
   @media (max-width: 768px) {
+    /* Sidebar slides in from left — NOT display:none */
     .sidebar {
-      display: none;
-      /* TODO: add hamburger menu for mobile */
+      display: flex !important;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.sidebar-open .sidebar {
+      transform: translateX(0);
+      box-shadow: 4px 0 32px rgba(0, 0, 0, 0.5);
+    }
+
+    body.sidebar-open .sidebar-backdrop {
+      display: block;
     }
 
     .main-content {
@@ -199,7 +222,8 @@
   }
 </style>
 
-<!-- ── Active page highlight ───────────────────────────────────────────────
+<!-- Sidebar backdrop element — injected into body via JS after load -->
+<!-- ── Active page highlight + mobile close-on-link behavior ──────────────────
      NOTE: Inline <script> inside innerHTML is NOT executed by the browser.
      This function is called explicitly by loadComponent() after injection.
 ──────────────────────────────────────────────────────────────────────────── -->
@@ -216,8 +240,33 @@
       }
     });
   };
+
   // Run immediately — works when sidebar.html is loaded as a standalone file (non-innerHTML path)
   if (document.querySelector('.sidebar-link[data-page]')) {
     window.__markActiveSidebarLink();
   }
+
+  // ── Backdrop + mobile close-on-link-click ──────────────────────────────
+  (function setupMobileSidebar() {
+    // Inject backdrop if not already present
+    if (!document.getElementById('sidebar-backdrop')) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'sidebar-backdrop';
+      backdrop.id = 'sidebar-backdrop';
+      backdrop.setAttribute('aria-hidden', 'true');
+      backdrop.addEventListener('click', () => {
+        document.body.classList.remove('sidebar-open');
+      });
+      document.body.appendChild(backdrop);
+    }
+
+    // Close sidebar when any nav link is clicked (on mobile)
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          document.body.classList.remove('sidebar-open');
+        }
+      });
+    });
+  })();
 </script>

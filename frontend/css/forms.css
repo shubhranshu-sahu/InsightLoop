@@ -789,8 +789,77 @@
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
+@media (max-width: 1024px) {
+  .forms-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
-  .forms-header { flex-direction: column; }
-  .forms-grid { grid-template-columns: 1fr; }
-  .modal-dialog { margin: 0.75rem; }
+  .page-content {
+    padding: 1.25rem;
+  }
+
+  /* Header stacks vertically; create button full-width */
+  .forms-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .forms-header .btn-brand {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Single column tile grid */
+  .forms-grid {
+    grid-template-columns: 1fr;
+    gap: 0.875rem;
+  }
+
+  /* Full-screen modals on mobile */
+  .modal-dialog {
+    margin: 0;
+    max-width: 100%;
+    min-height: 100%;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+
+  /* QR URL row wraps */
+  .qr-url-row { flex-direction: column; }
+  .qr-url-row .btn-copy { width: 100%; justify-content: center; }
+
+  /* QR actions stack */
+  .qr-actions { flex-direction: column; }
+
+  /* Dropdown opens full-width on mobile */
+  .question-type-dropdown {
+    left: 0;
+    right: 0;
+    min-width: unset;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-content {
+    padding: 1rem;
+  }
+
+  .forms-header-left h1 {
+    font-size: 1.25rem;
+  }
+
+  .modal-body {
+    padding: 1.25rem 1rem;
+  }
+
+  .modal-header {
+    padding: 1rem 1.25rem;
+  }
 }
