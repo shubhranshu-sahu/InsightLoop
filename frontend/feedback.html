@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Share Your Feedback — InsightLoop</title>
+  <meta name="description" content="Share your experience and help us improve.">
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Background orbs */
+    .fb-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .fb-orb {
+      position: absolute; border-radius: 50%; filter: blur(80px);
+      animation: float 20s ease-in-out infinite;
+    }
+    .fb-orb-1 { width: 500px; height: 500px; background: var(--primary); opacity: 0.08; top: -150px; right: -100px; }
+    .fb-orb-2 { width: 350px; height: 350px; background: var(--secondary); opacity: 0.06; bottom: -100px; left: -80px; animation-delay: -10s; }
+    @keyframes float {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(20px,-20px) scale(1.04); }
+    }
+
+    .fb-wrap {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 560px;
+    }
+
+    /* Header */
+    .fb-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-top: 1rem;
+    }
+    .fb-logo {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 1rem; font-weight: 700; color: var(--text-primary);
+      text-decoration: none; margin-bottom: 2rem;
+    }
+    .fb-logo img { width: 28px; height: 28px; border-radius: 6px; }
+    .fb-logo .text-gradient {
+      background: linear-gradient(135deg, var(--primary-light), var(--accent-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .fb-business-name {
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--primary-light);
+      background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.2);
+      border-radius: var(--radius-full); padding: 0.3rem 1rem;
+      display: inline-block; margin-bottom: 1.25rem;
+    }
+    .fb-title { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.625rem; }
+    .fb-desc { font-size: 0.9375rem; color: var(--text-secondary); line-height: 1.6; }
+
+    /* Progress bar */
+    .fb-progress {
+      height: 3px; background: var(--bg-surface); border-radius: 2px;
+      margin-bottom: 2rem; overflow: hidden;
+    }
+    .fb-progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 2px; transition: width 0.4s var(--ease-out);
+      width: 0%;
+    }
+
+    /* Question card */
+    .fb-card {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-2xl);
+      padding: 1.75rem;
+      margin-bottom: 1rem;
+      transition: border-color 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .fb-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .fb-card.answered::before { opacity: 1; }
+    .fb-card.answered { border-color: rgba(99,102,241,0.25); }
+
+    .fb-q-meta {
+      display: flex; align-items: center; gap: 0.5rem;
+      margin-bottom: 0.875rem;
+    }
+    .fb-q-num {
+      width: 24px; height: 24px; border-radius: 6px;
+      background: var(--gradient-subtle); border: 1px solid rgba(99,102,241,0.2);
+      font-size: 0.688rem; font-weight: 700; color: var(--primary-light);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .fb-q-text {
+      font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); flex: 1;
+    }
+    .fb-required {
+      font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--danger);
+      background: var(--danger-bg); padding: 0.15rem 0.4rem;
+      border-radius: var(--radius-full); flex-shrink: 0;
+    }
+
+    /* ── Rating stars ───────────────────────────────── */
+    .star-row {
+      display: flex; gap: 0.5rem; margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .star-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 0.25rem; line-height: 1; transition: transform 0.15s var(--ease-out);
+    }
+    .star-btn:hover { transform: scale(1.2); }
+    .star-btn svg {
+      width: 36px; height: 36px;
+      transition: fill 0.15s, stroke 0.15s;
+    }
+    .star-btn svg { fill: var(--bg-hover); stroke: var(--border-hover); stroke-width: 1.5; }
+    .star-btn.active svg { fill: var(--warning); stroke: var(--warning); }
+    .star-btn.hovered svg { fill: rgba(245,158,11,0.5); stroke: var(--warning); }
+
+    /* ── Yes / No ───────────────────────────────────── */
+    .yn-row { display: flex; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    .yn-btn {
+      flex: 1; min-width: 120px;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.875rem 1rem;
+      background: var(--bg-surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-xl); cursor: pointer;
+      font-family: var(--font-sans); font-size: 0.9375rem; font-weight: 600;
+      color: var(--text-secondary);
+      transition: all 0.2s var(--ease-out);
+    }
+    .yn-btn:hover { border-color: var(--border-hover); background: var(--bg-hover); }
+    .yn-btn.selected-yes { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+    .yn-btn.selected-no  { border-color: var(--danger);  background: var(--danger-bg);  color: var(--danger); }
+    .yn-btn svg { width: 18px; height: 18px; }
+
+    /* ── Text input ─────────────────────────────────── */
+    .fb-textarea {
+      width: 100%; min-height: 100px; margin-top: 0.5rem;
+      background: var(--bg-surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 0.875rem;
+      font-family: var(--font-sans); font-size: 0.9375rem; color: var(--text-primary);
+      resize: vertical; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .fb-textarea::placeholder { color: var(--text-muted); }
+    .fb-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+
+    /* Submit */
+    .fb-submit {
+      width: 100%; padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: none; border-radius: var(--radius-xl);
+      font-family: var(--font-sans); font-size: 1rem; font-weight: 700;
+      color: white; cursor: pointer; letter-spacing: 0.01em;
+      display: flex; align-items: center; justify-content: center; gap: 0.625rem;
+      transition: all 0.2s var(--ease-out);
+      box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+      margin-top: 1.5rem;
+    }
+    .fb-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(99,102,241,0.4); }
+    .fb-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .fb-submit svg { width: 18px; height: 18px; }
+
+    /* ── States ─────────────────────────────────────── */
+    #state-loading, #state-error, #state-inactive, #state-success { display: none; }
+
+    .state-center {
+      min-height: 60vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center; gap: 1.25rem;
+    }
+    .state-icon {
+      width: 72px; height: 72px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto;
+    }
+    .state-icon.primary { background: rgba(99,102,241,0.12); }
+    .state-icon.success { background: var(--success-bg); }
+    .state-icon.danger  { background: var(--danger-bg); }
+    .state-icon.warning { background: var(--warning-bg); }
+    .state-icon svg { width: 36px; height: 36px; }
+
+    .state-title { font-size: 1.375rem; font-weight: 700; }
+    .state-body  { font-size: 0.9375rem; color: var(--text-secondary); max-width: 320px; line-height: 1.65; }
+
+    /* Success confetti strip */
+    .success-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 1.25rem; border-radius: var(--radius-full);
+      background: var(--success-bg); border: 1px solid rgba(16,185,129,0.25);
+      color: var(--success); font-size: 0.875rem; font-weight: 600;
+    }
+
+    /* Spinner */
+    .fb-spinner {
+      width: 40px; height: 40px; border: 3px solid rgba(99,102,241,0.2);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.7s linear infinite; margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error field highlight */
+    .fb-card.error { border-color: rgba(239,68,68,0.4); animation: shake 0.35s; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+    .fb-error-msg { font-size: 0.75rem; color: var(--danger); margin-top: 0.5rem; }
+
+    /* Footer */
+    .fb-footer {
+      text-align: center; margin-top: 2.5rem;
+      font-size: 0.75rem; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center; gap: 0.375rem;
+    }
+    .fb-footer svg { width: 12px; height: 12px; color: var(--primary-light); }
+
+    @media (max-width: 480px) {
+      body { padding: 1.25rem 0.875rem 3rem; }
+      .fb-card { padding: 1.375rem 1.125rem; }
+      .fb-title { font-size: 1.375rem; }
+      .star-btn svg { width: 30px; height: 30px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background -->
+  <div class="fb-bg">
+    <div class="fb-orb fb-orb-1"></div>
+    <div class="fb-orb fb-orb-2"></div>
+  </div>
+
+  <div class="fb-wrap">
+
+    <!-- Logo -->
+    <div style="text-align:center; margin-bottom: 1.5rem;">
+      <a href="index.html" class="fb-logo">
+        <img src="assets/images/logo.png" alt="InsightLoop">
+        Insight<span class="text-gradient">Loop</span>
+      </a>
+    </div>
+
+    <!-- ── Loading state ── -->
+    <div id="state-loading" class="state-center">
+      <div class="fb-spinner"></div>
+      <p style="color:var(--text-muted);font-size:0.875rem;">Loading your form…</p>
+    </div>
+
+    <!-- ── Error state ── -->
+    <div id="state-error" class="state-center">
+      <div class="state-icon danger">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="var(--danger)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="state-title">Form Not Found</div>
+      <div class="state-body" id="error-msg">This feedback form doesn't exist or the link is invalid.</div>
+    </div>
+
+    <!-- ── Inactive state ── -->
+    <div id="state-inactive" class="state-center">
+      <div class="state-icon warning">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="var(--warning)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="state-title">Form Closed</div>
+      <div class="state-body">This feedback form is no longer accepting responses.</div>
+    </div>
+
+    <!-- ── Success state ── -->
+    <div id="state-success" class="state-center">
+      <div class="state-icon success">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="var(--success)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+      </div>
+      <div class="success-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 6 9 17l-5-5"/></svg>
+        Submitted Successfully
+      </div>
+      <div class="state-title">Thank You! 🎉</div>
+      <div class="state-body">Your feedback has been received and will help us improve. We genuinely appreciate your time.</div>
+    </div>
+
+    <!-- ── Main form ── -->
+    <div id="state-form" style="display:none;">
+      <div class="fb-header">
+        <div class="fb-business-name" id="fb-business-name"></div>
+        <h1 class="fb-title" id="fb-title"></h1>
+        <p class="fb-desc" id="fb-desc"></p>
+      </div>
+
+      <div class="fb-progress">
+        <div class="fb-progress-fill" id="fb-progress"></div>
+      </div>
+
+      <div id="fb-questions"></div>
+
+      <button class="fb-submit" id="fb-submit-btn" onclick="submitFeedback()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Submit Feedback
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <div class="fb-footer">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Responses are private and securely analyzed by InsightLoop
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/feedback.js"></script>
+</body>
+</html>
