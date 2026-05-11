@@ -200,15 +200,24 @@
 </style>
 
 <!-- ── Active page highlight ───────────────────────────────────────────────
-     Runs immediately after injection, before Lucide renders.
+     NOTE: Inline <script> inside innerHTML is NOT executed by the browser.
+     This function is called explicitly by loadComponent() after injection.
 ──────────────────────────────────────────────────────────────────────────── -->
 <script>
-  (function markActivePage() {
+  window.__markActiveSidebarLink = function() {
     const path = window.location.pathname;
     document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
-      if (path.includes(link.dataset.page)) {
+      const page = link.dataset.page;
+      // Match: /pages/forms.html → 'forms', /pages/dashboard.html → 'dashboard'
+      if (path.includes(page)) {
         link.classList.add('active');
+      } else {
+        link.classList.remove('active');
       }
     });
-  })();
+  };
+  // Run immediately — works when sidebar.html is loaded as a standalone file (non-innerHTML path)
+  if (document.querySelector('.sidebar-link[data-page]')) {
+    window.__markActiveSidebarLink();
+  }
 </script>

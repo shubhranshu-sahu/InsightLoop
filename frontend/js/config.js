@@ -185,8 +185,12 @@ export function showToast(message, type = 'info', duration = 4000) {
  * Load an HTML partial into a container element.
  * Used for sidebar and navbar that repeat across pages.
  *
+ * IMPORTANT: innerHTML does NOT execute <script> tags.
+ * This function clones and re-appends each <script> so they run.
+ *
  * @param {string} selector - CSS selector of the container element
  * @param {string} url - Path to the HTML partial file
+ * @returns {Promise<void>}
  *
  * @example
  *   loadComponent('#sidebar-container', '../components/sidebar.html');
@@ -197,9 +201,23 @@ export async function loadComponent(selector, url) {
 
   try {
     const response = await fetch(url);
-    if (response.ok) {
-      container.innerHTML = await response.text();
-    }
+    if (!response.ok) return;
+
+    container.innerHTML = await response.text();
+
+    // Re-execute any <script> tags inside the injected HTML.
+    // innerHTML does not run scripts — we must clone them into the DOM.
+    container.querySelectorAll('script').forEach(oldScript => {
+      const newScript = document.createElement('script');
+      // Copy all attributes (e.g. type="module", src=...)
+      Array.from(oldScript.attributes).forEach(attr =>
+        newScript.setAttribute(attr.name, attr.value)
+      );
+      newScript.textContent = oldScript.textContent;
+      // Replace original (non-executing) script with live one
+      oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
+
   } catch (err) {
     console.warn(`Failed to load component: ${url}`, err);
   }
