@@ -74,6 +74,7 @@ function setupEventListeners() {
   document.getElementById('searchInput').addEventListener('input', applyFilters);
   document.getElementById('dateFrom').addEventListener('change', applyFilters);
   document.getElementById('dateTo').addEventListener('change', applyFilters);
+  document.getElementById('sortSelect').addEventListener('change', applyFilters);
   
   // Modal close via our custom button
   document.querySelector('#responseModal .btn-ghost').addEventListener('click', () => {
@@ -105,6 +106,22 @@ async function loadForms() {
         opt.textContent = f.title;
         select.appendChild(opt);
       });
+      
+      // Auto-select from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const formIdFromUrl = urlParams.get('form_id');
+      if (formIdFromUrl && select.querySelector(`option[value="${formIdFromUrl}"]`)) {
+        select.value = formIdFromUrl;
+        
+        // Load responses immediately
+        await loadResponses(formIdFromUrl);
+        
+        // Auto-open modal if response_id is in URL
+        const responseIdFromUrl = urlParams.get('response_id');
+        if (responseIdFromUrl) {
+          openModal(responseIdFromUrl);
+        }
+      }
     } else {
       select.innerHTML = '<option value="">No forms found</option>';
       select.disabled = true;
@@ -186,6 +203,12 @@ function applyFilters() {
     if (dateFrom && date < new Date(dateFrom)) return false;
     if (dateTo && date > new Date(dateTo + 'T23:59:59')) return false;
     return true;
+  });
+
+  const sortOrder = document.getElementById('sortSelect').value;
+  filtered.sort((a, b) => {
+    if (sortOrder === 'newest') return new Date(b.submitted_at) - new Date(a.submitted_at);
+    return new Date(a.submitted_at) - new Date(b.submitted_at);
   });
 
   renderResponses(filtered);

@@ -72,6 +72,14 @@ async function loadForms() {
         opt.textContent = f.title;
         select.appendChild(opt);
       });
+      
+      // Auto-select from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const formIdFromUrl = urlParams.get('form_id');
+      if (formIdFromUrl && select.querySelector(`option[value="${formIdFromUrl}"]`)) {
+        select.value = formIdFromUrl;
+        select.dispatchEvent(new Event('change'));
+      }
     } else {
       select.innerHTML = '<option value="">No forms found</option>';
       select.disabled = true;

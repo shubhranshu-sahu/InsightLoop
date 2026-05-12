@@ -499,7 +499,7 @@ function renderFormsTable(forms) {
       <td class="pct-negative">${negPct}%</td>
       <td class="${f.complaint_count > 0 ? 'complaint-count' : ''}">${fmt(f.complaint_count)}</td>
       <td>${timeAgo(f.last_response_at)}</td>
-      <td><a href="form-detail.html?form_id=${f.form_id}" class="table-action">View <i data-lucide="arrow-right"></i></a></td>
+      <td><a href="analysis.html?form_id=${f.form_id}" class="table-action">View <i data-lucide="arrow-right"></i></a></td>
     </tr>`;
     }).join('');
     if (window.lucide) window.lucide.createIcons();
@@ -523,14 +523,18 @@ function renderRecentTable(responses) {
         showStateBox(wrapper, 'empty', 'No feedback received yet. Share your QR code to start collecting.');
         return;
     }
-    tbody.innerHTML = responses.map(r => `<tr>
+    
+    // Sort responses by newest first
+    const sortedResponses = [...responses].sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+
+    tbody.innerHTML = sortedResponses.map(r => `<tr>
     <td class="table-form-name" title="${r.form_title || ''}" style="max-width:140px;">${r.form_title || '�'}</td>
     <td style="white-space:nowrap;">${timeAgo(r.submitted_at)}</td>
     <td><span class="badge badge-${r.sentiment || 'neutral'}">${r.sentiment || '�'}</span></td>
     <td><span class="badge badge-${r.urgency || 'low'}">${r.urgency || '�'}</span></td>
     <td>${r.dominant_topic || '�'}</td>
     <td class="summary-cell" title="${r.summary || ''}">${truncate(r.summary, 70)}</td>
-    <td><a href="form-detail.html?response_id=${r.response_id}" class="table-action">View <i data-lucide="arrow-right"></i></a></td>
+    <td><a href="responses.html?form_id=${r.form_id}&response_id=${r.response_id}" class="table-action">View <i data-lucide="arrow-right"></i></a></td>
   </tr>`).join('');
     if (window.lucide) window.lucide.createIcons();
 }
