@@ -32,7 +32,7 @@ let createModal, viewModal, qrModal, deleteModal;
 
 // ── Question type limits ──────────────────────────────────────────────────────
 const LIMITS = { rating: 3, text: 2, yesno: 1 };
-const counts  = { rating: 0, text: 0, yesno: 0 };
+const counts = { rating: 0, text: 0, yesno: 0 };
 
 // ── State for delete modal ────────────────────────────────────────────────────
 let pendingDeleteId = null;
@@ -145,8 +145,8 @@ function renderStatPills(forms, responseMap) {
   const container = document.getElementById('forms-stat-pills');
   if (!container) return;
 
-  const total    = forms.length;
-  const active   = forms.filter(f => f.is_active).length;
+  const total = forms.length;
+  const active = forms.filter(f => f.is_active).length;
   const responses = Object.values(responseMap).reduce((a, b) => a + b, 0);
 
   container.innerHTML = `
@@ -216,8 +216,8 @@ function renderFormTiles(forms, responseMap) {
         </div>
 
         ${f.description
-          ? `<div class="form-tile-desc">${escHtml(f.description)}</div>`
-          : '<div class="form-tile-desc" style="color:var(--text-disabled);font-style:italic;">No description</div>'}
+        ? `<div class="form-tile-desc">${escHtml(f.description)}</div>`
+        : '<div class="form-tile-desc" style="color:var(--text-disabled);font-style:italic;">No description</div>'}
 
         <div class="form-tile-meta">
           <span class="tile-status-badge ${isActive ? 'active' : 'inactive'}">
@@ -306,8 +306,8 @@ async function openViewModal(formId) {
 
       <div class="view-question-list">
         ${questions.length === 0
-          ? `<p style="text-align:center;color:var(--text-muted);font-size:0.875rem;padding:1.5rem 0;">No questions added.</p>`
-          : questions.sort((a, b) => a.order_index - b.order_index).map((q, i) => renderViewQuestion(q, i)).join('')}
+        ? `<p style="text-align:center;color:var(--text-muted);font-size:0.875rem;padding:1.5rem 0;">No questions added.</p>`
+        : questions.sort((a, b) => a.order_index - b.order_index).map((q, i) => renderViewQuestion(q, i)).join('')}
       </div>`;
 
     if (window.lucide) window.lucide.createIcons();
@@ -329,7 +329,7 @@ async function openViewModal(formId) {
  */
 function renderViewQuestion(q, index) {
   const typeLabel = { rating: 'Rating', text: 'Text', yesno: 'Yes / No' }[q.question_type] || q.question_type;
-  const typeTag   = { rating: 'type-tag-rating', text: 'type-tag-text', yesno: 'type-tag-yesno' }[q.question_type] || '';
+  const typeTag = { rating: 'type-tag-rating', text: 'type-tag-text', yesno: 'type-tag-yesno' }[q.question_type] || '';
 
   let preview = '';
   if (q.question_type === 'rating') {
@@ -380,7 +380,7 @@ async function openQRModal(formId, formTitle) {
 
   try {
     const data = await apiFetch(`/api/qr/${formId}`);
-    const url  = data.public_url;
+    const url = data.public_url;
 
     body.innerHTML = `
       <div class="qr-title">${escHtml(data.form_title || formTitle)}</div>
@@ -491,6 +491,7 @@ async function confirmDelete() {
     // Surface error as a browser alert — simple but reliable
     alert(`Failed to delete form: ${err.message}`);
   } finally {
+    setLoading(btn, false);
     pendingDeleteId = null;
   }
 }
@@ -499,7 +500,7 @@ async function confirmDelete() {
  * If all tiles removed, show the empty state.
  */
 function checkFormsEmpty() {
-  const grid  = document.getElementById('forms-grid');
+  const grid = document.getElementById('forms-grid');
   const tiles = grid?.querySelectorAll('.form-tile');
   if (tiles && tiles.length === 0) {
     grid.innerHTML = `
@@ -527,13 +528,13 @@ window.openDeleteConfirm = openDeleteConfirm;
  */
 function resetCreateModal() {
   document.getElementById('form-title').value = '';
-  document.getElementById('form-desc').value  = '';
+  document.getElementById('form-desc').value = '';
   document.getElementById('title-count').textContent = '0';
-  document.getElementById('desc-count').textContent  = '0';
+  document.getElementById('desc-count').textContent = '0';
   document.getElementById('questions-list').innerHTML = '';
   counts.rating = 0;
-  counts.text   = 0;
-  counts.yesno  = 0;
+  counts.text = 0;
+  counts.yesno = 0;
   updateDropdownState();
   updateQCountLabel();
   hideCreateAlert();
@@ -555,12 +556,12 @@ function resetCreateModal() {
 function updateDropdownState() {
   ['rating', 'text', 'yesno'].forEach(type => {
     const left = LIMITS[type] - counts[type];
-    const rem  = document.getElementById(`remaining-${type}`);
-    const opt  = document.querySelector(`.qtype-option[data-type="${type}"]`);
+    const rem = document.getElementById(`remaining-${type}`);
+    const opt = document.querySelector(`.qtype-option[data-type="${type}"]`);
     if (!rem || !opt) return;
     const total = LIMITS[type];
     rem.textContent = left === 0 ? 'Limit reached' : `${left} of ${total} remaining`;
-    rem.className   = left === 0 ? 'qtype-remaining none' : 'qtype-remaining';
+    rem.className = left === 0 ? 'qtype-remaining none' : 'qtype-remaining';
     opt.classList.toggle('disabled', left === 0);
     opt.setAttribute('aria-disabled', String(left === 0));
   });
@@ -571,13 +572,13 @@ function updateDropdownState() {
  */
 function updateQCountLabel() {
   const total = counts.rating + counts.text + counts.yesno;
-  const el    = document.getElementById('q-count-label');
+  const el = document.getElementById('q-count-label');
   if (el) el.textContent = `${total} added`;
 }
 
 /** Open the custom question type dropdown. */
 function openQDropdown() {
-  const btn      = document.getElementById('btn-add-q');
+  const btn = document.getElementById('btn-add-q');
   const dropdown = document.getElementById('q-type-dropdown');
   if (!btn || !dropdown) return;
   btn.classList.add('open');
@@ -587,7 +588,7 @@ function openQDropdown() {
 
 /** Close the custom question type dropdown. */
 function closeQDropdown() {
-  const btn      = document.getElementById('btn-add-q');
+  const btn = document.getElementById('btn-add-q');
   const dropdown = document.getElementById('q-type-dropdown');
   if (!btn || !dropdown) return;
   btn.classList.remove('open');
@@ -606,15 +607,15 @@ function addQuestion(type) {
   updateQCountLabel();
   closeQDropdown();
 
-  const list  = document.getElementById('questions-list');
+  const list = document.getElementById('questions-list');
   const index = counts.rating + counts.text + counts.yesno; // sequential ID
-  const uid   = `q-${type}-${Date.now()}`;
+  const uid = `q-${type}-${Date.now()}`;
   const typeLabels = { rating: 'Rating', text: 'Text', yesno: 'Yes / No' };
-  const tagClass   = { rating: 'type-tag-rating', text: 'type-tag-text', yesno: 'type-tag-yesno' };
+  const tagClass = { rating: 'type-tag-rating', text: 'type-tag-text', yesno: 'type-tag-yesno' };
   const placeholders = {
     rating: 'e.g. How would you rate the food quality?',
-    text:   'e.g. Any additional comments or suggestions?',
-    yesno:  'e.g. Would you recommend us to a friend?',
+    text: 'e.g. Any additional comments or suggestions?',
+    yesno: 'e.g. Would you recommend us to a friend?',
   };
 
   // Build star preview HTML (only for rating questions)
@@ -637,7 +638,7 @@ function addQuestion(type) {
   const block = document.createElement('div');
   block.className = `question-block type-${type}`;
   block.dataset.type = type;
-  block.dataset.uid  = uid;
+  block.dataset.uid = uid;
   block.innerHTML = `
     <div class="question-block-header">
       <span class="question-type-tag ${tagClass[type]}">${typeLabels[type]}</span>
@@ -693,7 +694,7 @@ function removeQuestion(removeBtn) {
 }
 
 // Expose for inline onclick
-window.addQuestion    = addQuestion;
+window.addQuestion = addQuestion;
 window.removeQuestion = removeQuestion;
 
 
@@ -706,9 +707,9 @@ window.removeQuestion = removeQuestion;
  */
 async function submitCreateForm() {
   hideCreateAlert();
-  const btn   = document.getElementById('btn-submit-create');
+  const btn = document.getElementById('btn-submit-create');
   const title = document.getElementById('form-title').value.trim();
-  const desc  = document.getElementById('form-desc').value.trim();
+  const desc = document.getElementById('form-desc').value.trim();
 
   // ── Validation ─────────────────────────────────────────────────────────────
   if (!title) {
@@ -724,13 +725,13 @@ async function submitCreateForm() {
   }
 
   const questions = [];
-  let orderIndex  = 1;
-  let hasError    = false;
+  let orderIndex = 1;
+  let hasError = false;
 
   questionBlocks.forEach(block => {
     if (hasError) return;
     const textInput = block.querySelector('[data-question-text]');
-    const qText     = textInput?.value.trim();
+    const qText = textInput?.value.trim();
     if (!qText) {
       showCreateAlert('Please fill in all question texts before submitting.');
       textInput?.focus();
@@ -741,8 +742,8 @@ async function submitCreateForm() {
     questions.push({
       question_text: qText,
       question_type: block.dataset.type,
-      order_index:   orderIndex++,
-      is_required:   isRequired,
+      order_index: orderIndex++,
+      is_required: isRequired,
     });
   });
 
@@ -803,8 +804,8 @@ function showToast(message) {
 document.addEventListener('DOMContentLoaded', () => {
   // Bootstrap modal instances
   createModal = new bootstrap.Modal(document.getElementById('createFormModal'));
-  viewModal   = new bootstrap.Modal(document.getElementById('viewFormModal'));
-  qrModal     = new bootstrap.Modal(document.getElementById('qrModal'));
+  viewModal = new bootstrap.Modal(document.getElementById('viewFormModal'));
+  qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
   deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
 
   // Init Lucide icons
