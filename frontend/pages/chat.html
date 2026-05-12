@@ -1,26 +1,94 @@
-<!-- InsightLoop — AI Chat (stub) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Chat — InsightLoop</title>
+  <meta name="description" content="Talk to your feedback data using InsightLoop AI.">
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../css/main.css">
   <link rel="stylesheet" href="../css/chat.css">
+  <!-- Chart.js for future-proofing visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Markdown parsing & sanitization -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 </head>
 <body>
   <div id="sidebar-container"></div>
-  <main class="main-content">
+
+  <main class="main-content chat-layout">
     <div id="navbar-container"></div>
-    <div class="page-content">
-      <h1>AI Chat</h1>
-      <p style="color: var(--text-secondary);">Coming soon — chat with your feedback data.</p>
+
+    <!-- Chat Interface -->
+    <div class="chat-container">
+      
+      <!-- Chat Sidebar (Threads) -->
+      <aside class="chat-sidebar">
+        <div class="chat-sidebar-header">
+          <h2>Conversations</h2>
+          <select id="chatFormSelector" class="form-input form-selector" aria-label="Select form for chat">
+            <option value="">Select a form...</option>
+          </select>
+        </div>
+        <div class="thread-list" id="threadList">
+          <!-- Populated dynamically -->
+        </div>
+      </aside>
+
+      <!-- Chat Main Area -->
+      <section class="chat-main">
+        <div class="chat-header">
+          <div class="chat-header-info">
+            <h3 id="activeChatTitle">Select a form to start</h3>
+            <span class="chat-header-status" id="chatStatus">Waiting for connection...</span>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-empty-state" id="emptyState">
+            <div class="empty-icon-wrap">
+              <i data-lucide="bot"></i>
+            </div>
+            <h4>InsightLoop AI Assistant</h4>
+            <p>Ask me anything about your customer feedback. I can summarize complaints, analyze sentiment, or identify trends.</p>
+            <div class="suggested-prompts">
+              <button class="prompt-chip">What are the top complaints this week?</button>
+              <button class="prompt-chip">Summarize the positive feedback.</button>
+              <button class="prompt-chip">What do people say about the service?</button>
+            </div>
+          </div>
+          <!-- Messages will be appended here -->
+        </div>
+
+        <div class="chat-input-area">
+          <form id="chatForm" class="chat-form">
+            <div class="input-wrapper">
+              <textarea 
+                id="chatInput" 
+                class="chat-input" 
+                placeholder="Ask about your feedback data..." 
+                rows="1"
+                disabled
+              ></textarea>
+              <button type="submit" class="btn-send" id="btnSend" disabled aria-label="Send message">
+                <i data-lucide="send"></i>
+              </button>
+            </div>
+          </form>
+          <div class="chat-footer">
+            AI can make mistakes. Always verify important insights.
+          </div>
+        </div>
+      </section>
+
     </div>
   </main>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script type="module" src="../js/chat.js"></script>
 </body>
 </html>
