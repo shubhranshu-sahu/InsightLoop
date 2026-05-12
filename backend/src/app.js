@@ -19,11 +19,10 @@ const authRoutes = require('./routes/auth.routes');
 const formsRoutes = require('./routes/forms.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
-const aiRoutes = require('./routes/ai.routes');
+const chatRoutes = require('./routes/chat.routes');
 const reportsRoutes = require('./routes/reports.routes');
 const qrRoutes = require('./routes/qr.routes');
 const adminRoutes = require('./routes/admin.routes');
-const publicRoutes = require('./routes/public.routes');
 const responsesRoutes = require('./routes/responses.routes');
 const alertsRoutes = require('./routes/alerts.routes');
 
@@ -43,15 +42,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/forms', formsRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/responses', responsesRoutes);
 app.use('/api/alerts', alertsRoutes);
 
-// --- Public Routes (no auth — served to customers via QR scan) ---
-app.use('/form', publicRoutes);
+// NOTE: /form public HTML route removed — customers use Vercel-hosted feedback.html now
 
 // --- Health Check ---
 app.get('/api/health', (req, res) => {

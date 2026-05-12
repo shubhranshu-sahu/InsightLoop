@@ -80,6 +80,23 @@ const responseSchema = new mongoose.Schema(
         type: [String],
         default: [],
       },
+      per_text_analysis: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+        // Structure written by FastAPI:
+        // {
+        //   "question-uuid": {
+        //     label: "What could we do better?",
+        //     raw_answer: "The food was cold.",
+        //     sentiment: "negative",
+        //     sentiment_score: 0.88,
+        //     topics: ["food temperature"],
+        //     key_phrases: ["food was cold"],
+        //     intent: "complaint",
+        //     emotions: ["frustration"]
+        //   }
+        // }
+      },
     },
   },
   {
@@ -89,6 +106,13 @@ const responseSchema = new mongoose.Schema(
     versionKey: false, // No __v field
   }
 );
+
+// ── Compound indexes for dashboard/analytics query performance ──
+responseSchema.index({ form_id: 1, submitted_at: -1 });
+responseSchema.index({ business_id: 1, submitted_at: -1 });
+responseSchema.index({ form_id: 1, 'ai_analysis.overall_sentiment': 1 });
+responseSchema.index({ form_id: 1, 'ai_analysis.urgency': 1 });
+responseSchema.index({ business_id: 1, 'ai_analysis.status': 1 });
 
 const Response = mongoose.model('Response', responseSchema);
 

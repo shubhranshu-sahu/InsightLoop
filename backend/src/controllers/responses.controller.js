@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const axios = require('axios');
 const Response = require('../models/response.model');
 const FormModel = require('../models/form.model');
 
@@ -54,6 +55,14 @@ const submitResponse = async (req, res, next) => {
           ? submitted.value
           : submitted;
 
+        // Validate rating values — AI service expects strictly 1-5
+        if (question.question_type === 'rating') {
+          const numValue = Number(rawValue);
+          if (isNaN(numValue) || numValue < 1 || numValue > 5) {
+            return res.status(400).json({ error: `Invalid rating for question "${question.question_text}". Must be 1-5.` });
+          }
+        }
+
         enrichedAnswers[qId] = {
           label: question.question_text,
           type: question.question_type,
@@ -83,6 +92,11 @@ const submitResponse = async (req, res, next) => {
 
     await responseDoc.save();
 
+    // ── Fire-and-forget: call FastAPI AI service ────────
+    callAIService(responseDoc).catch(err => {
+      console.error('[AI] Analysis failed for response:', responseDoc.response_id, err.message);
+    });
+
     // ── Return success ──────────────────────────────────
     res.status(201).json({
       message: 'Thank you for your feedback!',
@@ -93,6 +107,27 @@ const submitResponse = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Fire-and-forget helper — sends the saved response to FastAPI for AI analysis.
+ * Sends the full enriched answers map (label + type + value per question).
+ */
+async function callAIService(responseDoc) {
+  await axios.post(
+    `${process.env.AI_SERVICE_URL}/analyze`,
+    {
+      response_id:  responseDoc.response_id,
+      form_id:      responseDoc.form_id,
+      business_id:  responseDoc.business_id,
+      submitted_at: responseDoc.submitted_at.toISOString(),
+      answers:      responseDoc.answers  // the full enriched map with label + type + value
+    },
+    {
+      headers: { 'X-Internal-Secret': process.env.INTERNAL_SECRET },
+      timeout: 30000
+    }
+  );
+}
 
 /**
  * GET /api/responses/form/:form_id
