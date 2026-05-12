@@ -15,10 +15,13 @@
   <div class="topbar-inner">
 
     <!-- ── Hamburger — mobile only ────────────────────────────────────── -->
-    <button class="topbar-hamburger" id="topbar-hamburger" aria-label="Open sidebar" onclick="document.body.classList.toggle('sidebar-open')">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
+    <button class="topbar-hamburger" id="topbar-hamburger" aria-label="Open sidebar"
+      onclick="document.body.classList.toggle('sidebar-open')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6" />
+        <line x1="4" y1="12" x2="20" y2="12" />
+        <line x1="4" y1="18" x2="20" y2="18" />
       </svg>
     </button>
 
@@ -29,7 +32,7 @@
     <div class="topbar-actions">
 
       <!-- Alert bell — badge count is updated by dashboard.js -->
-      <a href="dashboard.html#alerts" class="topbar-bell" id="topbar-bell" aria-label="View alerts">
+      <a href="dashboard.html#section-alerts" class="topbar-bell" id="topbar-bell" aria-label="View alerts">
         <i data-lucide="bell"></i>
         <!-- Hidden by default; shown + populated by dashboard.js when unread > 0 -->
         <span class="topbar-bell-badge" id="topbar-alert-badge" style="display:none;">0</span>
@@ -135,12 +138,25 @@
     color: var(--text-primary);
   }
 
-  .topbar-hamburger svg { width: 20px; height: 20px; }
+  .topbar-hamburger svg {
+    width: 20px;
+    height: 20px;
+  }
 
   @media (max-width: 768px) {
-    .topbar-hamburger { display: flex; }
-    .topbar-title { font-size: 0.9375rem; }
-    .topbar-user span { display: none; } /* Hide name text, keep icon */
+    .topbar-hamburger {
+      display: flex;
+    }
+
+    .topbar-title {
+      font-size: 0.9375rem;
+    }
+
+    .topbar-user span {
+      display: none;
+    }
+
+    /* Hide name text, keep icon */
   }
 
   /* Business name */
@@ -177,14 +193,14 @@
 </script>
 <script>
   // Hamburger sidebar toggle (safe fallback - runs after component injection)
-  (function() {
+  (function () {
     var btn = document.getElementById('topbar-hamburger');
     if (btn && !btn._hamburgerBound) {
       btn._hamburgerBound = true;
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', function () {
         document.body.classList.toggle('sidebar-open');
       });
-      document.addEventListener('keydown', function(e) {
+      document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') document.body.classList.remove('sidebar-open');
       });
     }
