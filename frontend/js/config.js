@@ -61,6 +61,7 @@ export function getUser() {
 export function logout() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  sessionStorage.clear();
   window.location.href = 'login.html';
 }
 

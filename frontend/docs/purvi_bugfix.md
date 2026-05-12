@@ -2,7 +2,7 @@
 **For:** Purvi (Node Developer) & Antigravity (AI Assistant)
 **Context:** The frontend `analysis.html` page has been built strictly according to `backend_updated_guide.md`, but the current backend API responses are either missing data, formatted incorrectly, or ignoring query parameters. 
 
-Please address the following two issues:
+Please address the following issues:
 
 ## 1. Bug: `sentiment-trend` endpoint ignores `form_id` filter
 **Endpoint:** `GET /api/analytics/sentiment-trend?form_id={uuid}&days=7`
@@ -59,3 +59,35 @@ According to `backend_updated_guide.md` (Section 5.4), the response should look 
 
 **Required Fix:**
 Update the `GET /api/analytics/form/:form_id` controller to match the exact JSON schema defined in the `backend_updated_guide.md`. Implement the missing `top_topics` and `rating_distribution` logic, and map the breakdown arrays into proper Javascript objects before sending the JSON response.
+
+---
+
+## 3. CRITICAL SECURITY BUG: Cross-Tenant Data Leak in Chat Creation
+**Endpoint:** `POST /api/chat/thread` (handled by `getOrCreateThread` in `chat.controller.js`)
+**The Issue:** The backend currently allows any logged-in business to create a chat thread mapped to a `form_id` that **belongs to a different business**. Because ownership of the `form_id` isn't verified in MySQL before passing the data to the FastAPI service, FastAPI mistakenly creates a thread linking Business A to Business B's form.
+As a consequence, when `GET /api/chat/threads` lists all threads for Business A, the leaked thread is returned and displayed in the frontend Sidebar.
+
+**Required Fix:**
+In `chat.controller.js -> getOrCreateThread`, verify the `business_id` from the MySQL database before proceeding to call the AI service. Update the SQL query logic to look like this:
+
+```javascript
+    // 1. Fetch form_title and its owner from MySQL
+    const pool = getPool();
+    const [rows] = await pool.query(
+      'SELECT title, business_id FROM feedback_forms WHERE form_id = ?',
+      [form_id]
+    );
+    
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Form not found.' });
+    }
+    
+    // 2. CRITICAL FIX: Ensure the form belongs to the logged-in business
+    if (rows[0].business_id !== business_id) {
+      return res.status(403).json({ error: 'Unauthorized: Form does not belong to this business.' });
+    }
+
+    const form_title = rows[0].title;
+    
+    // 3. Then proceed to call FastAPI...
+```
