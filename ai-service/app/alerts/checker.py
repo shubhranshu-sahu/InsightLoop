@@ -45,69 +45,43 @@ from app.pipeline.state import FeedbackState
 
 
 async def check_and_create_alerts(state: FeedbackState) -> None:
-    """
-    Check alert thresholds and write to MySQL alerts table if triggered.
+    from app.db.mongo import get_db
+    from app.db.mysql import get_mysql_pool
+    from app.config import settings
 
-    This function is a NO-OP in the current environment (MySQL not configured).
-    It raises NotImplementedError which is caught silently in routes/analyze.py.
+    # 1. Fast path — only high-urgency responses trigger alerts
+    if state.get("urgency") != "high":
+        return
 
-    Args:
-        state (FeedbackState): The completed pipeline state for the processed response.
-            Reads: urgency, form_id, business_id.
-
-    Returns:
-        None — side effect only. May write one row to MySQL alerts table.
-
-    Raises:
-        NotImplementedError: Always (until MySQL is configured).
-
-    Full implementation (paste here when MySQL is ready):
-
-        from app.db.mongo import get_db
-        from app.db.mysql import get_mysql_pool
-        from app.config import settings
-
-        # 1. Fast path — only high-urgency responses trigger alerts
-        if state["urgency"] != "high":
-            return
-
-        # 2. Count high-urgency responses for this form in the window
-        db = await get_db()
-        window_start = datetime.now(timezone.utc) - timedelta(
-            hours=settings.ALERT_WINDOW_HOURS
-        )
-        count = await db.responses.count_documents({
-            "form_id":             state["form_id"],
-            "business_id":         state["business_id"],
-            "ai_analysis.urgency": "high",
-            "submitted_at":        {"$gte": window_start},
-        })
-
-        # 3. Threshold check → write alert
-        if count >= settings.ALERT_HIGH_URGENCY_THRESHOLD:
-            pool = await get_mysql_pool()
-            async with pool.acquire() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(
-                        \"""
-                        INSERT IGNORE INTO alerts
-                            (alert_id, business_id, form_id, alert_type, message)
-                        VALUES
-                            (UUID(), %s, %s, %s, %s)
-                        \""",
-                        (
-                            state["business_id"],
-                            state["form_id"],
-                            "high_urgency_spike",
-                            f"{count} high-urgency complaint(s) received in the "
-                            f"last {settings.ALERT_WINDOW_HOURS} hours.",
-                        ),
-                    )
-                await conn.commit()
-    """
-    # TODO: Remove this raise and paste the full implementation above
-    # when MySQL is configured.
-    raise NotImplementedError(
-        "Alert checker requires MySQL — not yet configured. "
-        "This error is caught silently in routes/analyze.py."
+    # 2. Count high-urgency responses for this form in the window
+    db = await get_db()
+    window_start = datetime.now(timezone.utc) - timedelta(
+        hours=settings.ALERT_WINDOW_HOURS
     )
+    count = await db.responses.count_documents({
+        "form_id":             state.get("form_id"),
+        "business_id":         state.get("business_id"),
+        "ai_analysis.urgency": "high",
+        "submitted_at":        {"$gte": window_start},
+    })
+
+    # 3. Threshold check → write alert
+    if count >= settings.ALERT_HIGH_URGENCY_THRESHOLD:
+        pool = await get_mysql_pool()
+        async with pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    """
+                    INSERT IGNORE INTO alerts
+                        (alert_id, business_id, form_id, alert_type, message)
+                    VALUES
+                        (UUID(), %s, %s, %s, %s)
+                    """,
+                    (
+                        state.get("business_id"),
+                        state.get("form_id"),
+                        "high_urgency_spike",
+                        f"Spike detected: {count} high-urgency responses received in the last {settings.ALERT_WINDOW_HOURS} hours.",
+                    )
+                )
+                await conn.commit()

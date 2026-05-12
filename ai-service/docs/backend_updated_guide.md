@@ -1,7 +1,12 @@
 # InsightLoop — Backend & Frontend Complete Reference
 > **For:** Purvi (Node backend) · Frontend Developer  
 > **Purpose:** Single document covering all pages, all APIs, all fixes, all data formats.  
-> **Status as of now:** Read Section 1 first — there are critical bugs to fix before anything new is built.
+
+> [!CAUTION]
+> ## 🚨 URGENT BLOCKERS FOR FRONTEND 🚨
+> The live Vercel frontend (`feedback.html` / `feedback.js`) is currently blocked by two critical backend issues:
+> 1. **AI is never called:** Submissions are correctly hitting `POST /api/responses/submit` and saving to MongoDB, but they are permanently stuck on "pending". You MUST move the FastAPI trigger from `feedback.controller.js` into `responses.controller.js` (See Bug #2).
+> 2. **Conflicting HTML Routes:** The QR Codes and routing logic must point to the deployed Vercel frontend. Delete `public_routes.js` and `/form/:form_id` from `app.js` to prevent serving raw HTML from the backend (See Bug #5).
 
 ---
 
@@ -146,6 +151,24 @@ ai_analysis: {
 - `GET /api/feedback/form/:form_id` in `feedback.routes.js` stays — it returns JSON, this is used by `feedback.html`
 - The `/form` public routes that serve HTML can be removed from `app.js` (or left harmlessly — they won't be called)
 - Ensure `qr_codes.public_url` in MySQL points to the Vercel frontend URL + `feedback.html?form_id=uuid`, not `localhost:5000/form/uuid`
+
+---
+
+### Bug 6 — Missing Validation for Zero Ratings (Value = 0)
+
+**Problem:**
+If a frontend rating submission somehow sneaks through without a valid 1-5 rating (e.g., `value: 0`), `responses.controller.js` blindly saves it to MongoDB. The AI service relies on this being a strictly 1-5 scale.
+
+**Fix:**
+Add a quick validation check inside `responses.controller.js` during the answer processing loop.
+```javascript
+if (question.question_type === 'rating') {
+  const numValue = Number(rawValue);
+  if (isNaN(numValue) || numValue < 1 || numValue > 5) {
+    return res.status(400).json({ error: `Invalid rating for question "${question.question_text}". Must be 1-5.` });
+  }
+}
+```
 
 ---
 
