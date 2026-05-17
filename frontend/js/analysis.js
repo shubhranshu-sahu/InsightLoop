@@ -127,10 +127,7 @@ function renderStats(analytics) {
   const csat = analytics.csat_score ? parseFloat(analytics.csat_score).toFixed(1) : 'N/A';
   document.getElementById('statCSAT').textContent = csat;
 
-  const sentimentObj = (analytics.sentiment_breakdown || []).reduce((acc, curr) => {
-    acc[curr._id] = curr.count;
-    return acc;
-  }, {});
+  const sentimentObj = analytics.sentiment_breakdown || {};
   
   const pos = sentimentObj.positive || 0;
   const tot = analytics.total_responses || Object.values(sentimentObj).reduce((a, b) => a + b, 0);
@@ -143,8 +140,8 @@ function renderStats(analytics) {
 }
 
 function renderCharts(analytics, trend) {
-  const sentimentObj = (analytics.sentiment_breakdown || []).reduce((acc, curr) => { acc[curr._id] = curr.count; return acc; }, {});
-  const urgencyObj = (analytics.urgency_breakdown || []).reduce((acc, curr) => { acc[curr._id] = curr.count; return acc; }, {});
+  const sentimentObj = analytics.sentiment_breakdown || {};
+  const urgencyObj = analytics.urgency_breakdown || {};
   
   renderSentimentDonut(sentimentObj);
   renderUrgencyBar(urgencyObj);
