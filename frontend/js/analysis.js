@@ -121,20 +121,21 @@ function hideSkeletons() {
 }
 
 function renderStats(analytics) {
-  document.getElementById('statTotal').textContent = analytics.total_responses || 0;
+  const stats = analytics.stats || {};
+  document.getElementById('statTotal').textContent = stats.total_responses || 0;
 
   // If the backend doesn't provide csat_score yet, we can default to N/A
-  const csat = analytics.csat_score ? parseFloat(analytics.csat_score).toFixed(1) : 'N/A';
+  const csat = stats.csat_score ? parseFloat(stats.csat_score).toFixed(1) : 'N/A';
   document.getElementById('statCSAT').textContent = csat;
 
   const sentimentObj = analytics.sentiment_breakdown || {};
   
   const pos = sentimentObj.positive || 0;
-  const tot = analytics.total_responses || Object.values(sentimentObj).reduce((a, b) => a + b, 0);
+  const tot = stats.total_responses || Object.values(sentimentObj).reduce((a, b) => a + b, 0);
   const posPct = tot > 0 ? Math.round((pos / tot) * 100) : 0;
   document.getElementById('statPositive').textContent = `${posPct}%`;
 
-  const complaints = analytics.complaint_count || analytics.total_complaints || 0;
+  const complaints = stats.complaint_count || stats.total_complaints || 0;
   const compPct = tot > 0 ? Math.round((complaints / tot) * 100) : 0;
   document.getElementById('statComplaints').textContent = `${compPct}%`;
 }
