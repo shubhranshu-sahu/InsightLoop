@@ -124,8 +124,30 @@ function renderStats(analytics) {
   const stats = analytics.stats || {};
   document.getElementById('statTotal').textContent = stats.total_responses || 0;
 
-  // If the backend doesn't provide csat_score yet, we can default to N/A
-  const csat = stats.csat_score ? parseFloat(stats.csat_score).toFixed(1) : 'N/A';
+  // Calculate CSAT dynamically if not provided by backend
+  let csat = stats.csat_score ? parseFloat(stats.csat_score).toFixed(1) : 'N/A';
+  
+  if (csat === 'N/A' && analytics.rating_distribution) {
+    let sum = 0;
+    let count = 0;
+    const dist = analytics.rating_distribution;
+    const isNested = Object.values(dist).some(v => typeof v === 'object' && v !== null);
+    
+    if (isNested) {
+      Object.values(dist).forEach(val => {
+        if (typeof val === 'object' && val !== null) {
+          sum += (val['1'] || 0) * 1 + (val['2'] || 0) * 2 + (val['3'] || 0) * 3 + (val['4'] || 0) * 4 + (val['5'] || 0) * 5;
+          count += (val['1'] || 0) + (val['2'] || 0) + (val['3'] || 0) + (val['4'] || 0) + (val['5'] || 0);
+        }
+      });
+    } else {
+      sum += (dist['1'] || 0) * 1 + (dist['2'] || 0) * 2 + (dist['3'] || 0) * 3 + (dist['4'] || 0) * 4 + (dist['5'] || 0) * 5;
+      count += (dist['1'] || 0) + (dist['2'] || 0) + (dist['3'] || 0) + (dist['4'] || 0) + (dist['5'] || 0);
+    }
+    
+    if (count > 0) csat = (sum / count).toFixed(1);
+  }
+
   document.getElementById('statCSAT').textContent = csat;
 
   const sentimentObj = analytics.sentiment_breakdown || {};
