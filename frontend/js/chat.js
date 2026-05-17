@@ -348,43 +348,125 @@ function appendThinkingIndicator() {
 }
 
 function appendSources(sources, container) {
-  // Future proofing for RAG
+  if (!sources || sources.length === 0) return;
+
   const wrapper = document.createElement('div');
-  wrapper.className = 'msg-row assistant mt-2';
-  
-  const inner = document.createElement('div');
+  wrapper.className = 'msg-row assistant';
+
+  const chipsRow = document.createElement('div');
+  chipsRow.className = 'source-chips-row';
+
   sources.forEach((s, idx) => {
     const chip = document.createElement('button');
     chip.className = 'source-citation';
+    chip.setAttribute('aria-label', `View source ${idx + 1}: ${s.dominant_topic || 'feedback'}`);
     chip.innerHTML = `<i data-lucide="file-text" style="width:12px;height:12px;"></i> Source ${idx + 1}`;
-    chip.title = s.snippet || 'View source';
-    inner.appendChild(chip);
+
+    chip.addEventListener('click', () => openSourceModal(s, idx + 1));
+    chipsRow.appendChild(chip);
   });
-  
-  wrapper.appendChild(inner);
+
+  wrapper.appendChild(chipsRow);
   container.appendChild(wrapper);
   if (window.lucide) window.lucide.createIcons();
 }
 
-function appendChart(chartData, container) {
-  // Future proofing for data viz
-  const wrapper = document.createElement('div');
-  wrapper.className = 'msg-row assistant mt-2 w-100';
-  
-  const chartBox = document.createElement('div');
-  chartBox.className = 'chat-chart-container';
-  
-  const canvas = document.createElement('canvas');
-  chartBox.appendChild(canvas);
-  wrapper.appendChild(chartBox);
-  container.appendChild(wrapper);
-  
-  new Chart(canvas, {
-    type: chartData.type || 'bar',
-    data: chartData,
-    options: { responsive: true, maintainAspectRatio: false }
-  });
+// ── Source Citation Modal ─────────────────────────────────────────────────────
+
+function openSourceModal(source, idx) {
+  const overlay  = document.getElementById('sourceModalOverlay');
+  const badge    = document.getElementById('sourceModalBadge');
+  const metaEl   = document.getElementById('sourceModalMeta');
+  const snippetEl = document.getElementById('sourceModalSnippet');
+  const analysisEl = document.getElementById('sourceModalAnalysis');
+
+  // Header badge
+  badge.textContent = `Source ${idx} · ${source.dominant_topic || 'Feedback'}`;
+
+  // ── Meta pills ──────────────────────────────────────────────────────────────
+  const sentiment = (source.overall_sentiment || '').toLowerCase();
+  const urgency   = (source.urgency || '').toLowerCase();
+  const topic     = source.dominant_topic || '';
+  const isComplaint = source.is_complaint === 'true' || source.is_complaint === true;
+
+  // Format date nicely
+  let dateStr = '—';
+  if (source.submitted_at) {
+    try { dateStr = new Date(source.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
+    catch (_) { dateStr = source.submitted_at.slice(0, 10); }
+  }
+
+  const sentimentIcon = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
+  const urgencyIcon   = urgency === 'high' ? '🔴' : urgency === 'medium' ? '🟡' : '🟢';
+
+  metaEl.innerHTML = `
+    <span class="meta-pill sentiment-${sentiment}">${sentimentIcon} ${sentiment || 'unknown'}</span>
+    <span class="meta-pill urgency-${urgency}">${urgencyIcon} ${urgency || 'unknown'} urgency</span>
+    ${topic ? `<span class="meta-pill topic">🏷 ${topic}</span>` : ''}
+    ${isComplaint ? `<span class="meta-pill complaint">⚠ Complaint</span>` : ''}
+    <span class="meta-pill date">📅 ${dateStr}</span>
+  `;
+
+  // ── Snippet ─────────────────────────────────────────────────────────────────
+  if (source.snippet && source.snippet.trim()) {
+    snippetEl.textContent = source.snippet;
+    snippetEl.classList.remove('no-snippet');
+  } else {
+    snippetEl.textContent = 'Full text not available. The AI used this response in its analysis based on semantic matching.';
+    snippetEl.classList.add('no-snippet');
+  }
+
+  // ── Analysis grid ────────────────────────────────────────────────────────────
+  const responseLink = source.response_id
+    ? `<a href="#" style="color:var(--primary-light);font-size:0.75rem;word-break:break-all;" title="Response ID">${source.response_id.slice(0, 8)}…</a>`
+    : '—';
+
+  analysisEl.innerHTML = `
+    <div class="analysis-card">
+      <div class="analysis-card-label">Sentiment</div>
+      <div class="analysis-card-value">${sentimentIcon} ${sentiment || '—'}</div>
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-card-label">Urgency</div>
+      <div class="analysis-card-value">${urgencyIcon} ${urgency || '—'}</div>
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-card-label">Topic</div>
+      <div class="analysis-card-value">${topic || '—'}</div>
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-card-label">Complaint</div>
+      <div class="analysis-card-value">${isComplaint ? '⚠ Yes' : '✓ No'}</div>
+    </div>
+  `;
+
+  // Open the modal
+  overlay.classList.add('open');
+  if (window.lucide) window.lucide.createIcons();
+  document.addEventListener('keydown', handleModalKeydown);
 }
+
+function closeSourceModal() {
+  const overlay = document.getElementById('sourceModalOverlay');
+  overlay.classList.remove('open');
+  document.removeEventListener('keydown', handleModalKeydown);
+}
+
+function handleModalKeydown(e) {
+  if (e.key === 'Escape') closeSourceModal();
+}
+
+// Wire up close button and overlay-click-to-close
+document.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('sourceModalOverlay');
+  const closeBtn = document.getElementById('sourceModalClose');
+
+  if (closeBtn) closeBtn.addEventListener('click', closeSourceModal);
+  if (overlay) overlay.addEventListener('click', (e) => {
+    // Only close when clicking the dark overlay itself, not the modal card
+    if (e.target === overlay) closeSourceModal();
+  });
+});
 
 function scrollToBottom() {
   const container = document.getElementById('chatMessages');

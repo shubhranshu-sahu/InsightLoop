@@ -86,6 +86,36 @@
     </div>
   </main>
 
+  <!-- Source Citation Modal -->
+  <div class="source-modal-overlay" id="sourceModalOverlay" role="dialog" aria-modal="true" aria-labelledby="sourceModalTitle">
+    <div class="source-modal">
+      <div class="source-modal-header">
+        <div class="source-modal-badge" id="sourceModalBadge">Source 1</div>
+        <button class="source-modal-close" id="sourceModalClose" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="source-modal-meta" id="sourceModalMeta">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="source-modal-body">
+        <div class="source-modal-section">
+          <div class="source-modal-section-label">Feedback Excerpt</div>
+          <div class="source-modal-snippet" id="sourceModalSnippet">Loading...</div>
+        </div>
+
+        <div class="source-modal-section">
+          <div class="source-modal-section-label">AI Analysis</div>
+          <div class="source-modal-analysis" id="sourceModalAnalysis">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
