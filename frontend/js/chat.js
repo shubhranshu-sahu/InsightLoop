@@ -347,6 +347,15 @@ function appendThinkingIndicator() {
   return bubble.id;
 }
 
+// Shared close timer — cancelled if mouse enters the modal before it fires
+let _hoverCloseTimer = null;
+function scheduleModalClose() {
+  _hoverCloseTimer = setTimeout(() => closeSourceModal(), 150);
+}
+function cancelModalClose() {
+  clearTimeout(_hoverCloseTimer);
+}
+
 function appendSources(sources, container) {
   if (!sources || sources.length === 0) return;
 
@@ -362,26 +371,29 @@ function appendSources(sources, container) {
     chip.setAttribute('aria-label', `View source ${idx + 1}`);
     chip.innerHTML = `<i data-lucide="file-text" style="width:12px;height:12px;"></i> Source ${idx + 1}`;
 
-    let hoverTimer = null;
-    let isPinned = false;
+    let openTimer  = null;
+    let isPinned   = false;
 
-    // Hover to peek (300ms delay so quick pass-overs don't flash)
-    chip.addEventListener('mouseenter', () => {
-      hoverTimer = setTimeout(() => {
-        if (!isPinned) openSourceModal(s, idx + 1, false);
-      }, 300);
-    });
+    // Hover to peek — only on non-touch devices
+    if (window.matchMedia('(hover: hover)').matches) {
+      chip.addEventListener('mouseenter', () => {
+        cancelModalClose();               // cancel any pending close from another chip
+        openTimer = setTimeout(() => {
+          if (!isPinned) openSourceModal(s, idx + 1, false);
+        }, 250);
+      });
 
-    chip.addEventListener('mouseleave', () => {
-      clearTimeout(hoverTimer);
-      // Only close if not pinned by click
-      if (!isPinned) closeSourceModal();
-    });
+      chip.addEventListener('mouseleave', () => {
+        clearTimeout(openTimer);
+        if (!isPinned) scheduleModalClose();   // delayed close — modal's mouseenter will cancel it
+      });
+    }
 
-    // Click to pin / unpin
+    // Click to pin / unpin (works on both desktop and mobile)
     chip.addEventListener('click', (e) => {
       e.stopPropagation();
-      clearTimeout(hoverTimer);
+      clearTimeout(openTimer);
+      cancelModalClose();
       if (isPinned) {
         isPinned = false;
         closeSourceModal();
@@ -389,7 +401,6 @@ function appendSources(sources, container) {
         isPinned = true;
         openSourceModal(s, idx + 1, true);
       }
-      // Reset pin state when modal is closed externally
       const overlay = document.getElementById('sourceModalOverlay');
       overlay._onClose = () => { isPinned = false; };
     });
@@ -449,13 +460,19 @@ async function openSourceModal(source, idx, pinned) {
   if (window.lucide) window.lucide.createIcons();
   document.addEventListener('keydown', handleModalKeydown);
 
-  // Fetch real response data
+  // Keep modal open when mouse moves from chip into modal
+  overlay.addEventListener('mouseenter', cancelModalClose);
+  overlay.addEventListener('mouseleave', () => {
+    if (overlay.dataset.pinned !== '1') scheduleModalClose();
+  });
+
+  // Fetch real response data — API returns { response: {...} }
   if (source.response_id) {
     try {
       const data = await apiFetch(`/api/responses/${source.response_id}`);
-      renderModalContent(data, snippetEl, analysisEl);
+      renderModalContent(data.response ?? data, snippetEl, analysisEl);
     } catch (err) {
-      // Fallback to snippet from source metadata
+      console.warn('Source fetch failed:', err);
       if (source.snippet && source.snippet.trim()) {
         snippetEl.textContent = source.snippet;
       } else {
@@ -472,30 +489,29 @@ async function openSourceModal(source, idx, pinned) {
 }
 
 function renderModalContent(data, snippetEl, analysisEl) {
-  // Extract free-text answers from the response
   const answers = data.answers || {};
-  const textAnswers = Object.values(answers)
-    .filter(a => a.type === 'text' && a.value && a.value.trim())
-    .map(a => `<p><em>${a.label}:</em><br>${a.value}</p>`)
-    .join('');
+  const ai = data.ai_analysis || {};
 
-  if (textAnswers) {
-    snippetEl.innerHTML = textAnswers;
-    snippetEl.classList.remove('no-snippet');
-  } else {
-    snippetEl.textContent = 'No written feedback in this response.';
-    snippetEl.classList.add('no-snippet');
+  // ── Feedback excerpt: show ALL answers in a readable way ──────────────────
+  const answerLines = Object.values(answers).map(a => {
+    let val = '';
+    if (a.type === 'rating')  val = '★'.repeat(a.value) + '☆'.repeat(5 - a.value) + ` (${a.value}/5)`;
+    else if (a.type === 'yesno') val = a.value ? '✅ Yes' : '❌ No';
+    else val = a.value || '—';
+    return `<div class="answer-row"><span class="answer-label">${a.label}</span><span class="answer-value">${val}</span></div>`;
+  }).join('');
+
+  snippetEl.innerHTML = answerLines || '<em style="color:var(--text-muted)">No answers recorded.</em>';
+  snippetEl.classList.remove('no-snippet');
+
+  // Show AI summary as a callout if present
+  if (ai.summary) {
+    snippetEl.innerHTML += `<div class="ai-summary-callout">💡 <em>${ai.summary}</em></div>`;
   }
 
-  // AI analysis from the real document
-  const ai = data.ai_analysis || {};
-  const si = (ai.overall_sentiment||'') === 'positive' ? '😊' : (ai.overall_sentiment||'') === 'negative' ? '😞' : '😐';
-  const ui = (ai.urgency||'') === 'high' ? '🔴' : (ai.urgency||'') === 'medium' ? '🟡' : '🟢';
-
-  const ratingAnswers = Object.values(answers)
-    .filter(a => a.type === 'rating')
-    .map(a => `<div class="analysis-card"><div class="analysis-card-label">${a.label}</div><div class="analysis-card-value">${'★'.repeat(a.value)}${'☆'.repeat(5 - a.value)}</div></div>`)
-    .join('');
+  // ── Analysis grid ─────────────────────────────────────────────────────────
+  const si = ai.overall_sentiment === 'positive' ? '😊' : ai.overall_sentiment === 'negative' ? '😞' : '😐';
+  const ui = ai.urgency === 'high' ? '🔴' : ai.urgency === 'medium' ? '🟡' : '🟢';
 
   analysisEl.innerHTML = `
     <div class="analysis-card">
@@ -514,9 +530,9 @@ function renderModalContent(data, snippetEl, analysisEl) {
       <div class="analysis-card-label">Complaint</div>
       <div class="analysis-card-value">${ai.is_complaint ? '⚠ Yes' : '✓ No'}</div>
     </div>
-    ${ratingAnswers}
   `;
 }
+
 
 function renderAnalysisCards(source, analysisEl) {
   const si = (source.overall_sentiment||'') === 'positive' ? '😊' : (source.overall_sentiment||'') === 'negative' ? '😞' : '😐';
