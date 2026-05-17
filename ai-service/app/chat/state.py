@@ -54,6 +54,9 @@ class ChatState(TypedDict):
 
     # ── Set by stream_node ────────────────────────────────────────────────────
     full_response: str   # Complete accumulated LLM response (for MongoDB)
+    
+    # ── Set by execute_tools_node ─────────────────────────────────────────────
+    sources: list[dict]  # Citations from vector search
 
     # ── Set by save_node ──────────────────────────────────────────────────────
     message_count: int   # Updated total after this turn

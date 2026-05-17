@@ -41,7 +41,7 @@ async def save_node(state: ChatState) -> dict:
             "role":      "assistant",
             "content":   state["full_response"],
             "timestamp": now,
-            "sources":   [],  # Phase 1: empty. Phase 2: filled by RAG.
+            "sources":   state.get("sources", []),  # RAG citations from vector search
         }
 
         result = await db.chat_threads.find_one_and_update(

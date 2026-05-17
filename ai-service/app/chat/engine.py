@@ -132,12 +132,14 @@ async def run_chat_stream(
         "lc_messages":  [],
         "full_response": "",
         "message_count": 0,
+        "sources":      [],   # Must be initialized so execute_tools_node can append to it
         "error":        None,
     }
 
     # ── Step 5: Run the graph and intercept streaming events ──────────────────
     streaming_started = False
     final_message_count = 0
+    final_sources = []
 
     try:
         async for event in chat_graph.astream_events(initial_state, version="v2"):
@@ -146,15 +148,27 @@ async def run_chat_stream(
 
             # ── Token chunk from LLM ──────────────────────────────────────────
             if event_type == "on_chat_model_stream":
-                chunk = event["data"]["chunk"]
-                if chunk.content:
-                    streaming_started = True
-                    yield f"data: {TokenEvent(token=chunk.content).model_dump_json()}\n\n"
+                # BUG FIX: Only stream tokens from the final LLM output, not internal tool calls or summarization
+                if "final_output" in event.get("tags", []):
+                    chunk = event["data"]["chunk"]
+                    if chunk.content:
+                        streaming_started = True
+                        yield f"data: {TokenEvent(token=chunk.content).model_dump_json()}\n\n"
 
             # ── Graph completed — get final state ────────────────────────────
             elif event_type == "on_chain_end" and event.get("name") == "LangGraph":
                 output = event["data"].get("output", {})
                 final_message_count = output.get("message_count", 0)
+                final_sources = output.get("sources", [])
+
+                # Fallback for when stream_node used ainvoke() instead of astream()
+                # (e.g., no tool was called, Phase 1 answered directly without streaming).
+                # The tokens never fired on_chat_model_stream, so we emit them now.
+                if not streaming_started:
+                    full_resp = output.get("full_response", "")
+                    if full_resp:
+                        yield f"data: {TokenEvent(token=full_resp).model_dump_json()}\n\n"
+                        streaming_started = True
 
                 # Check if any node set an error
                 if output.get("error"):
@@ -177,4 +191,12 @@ async def run_chat_stream(
         return
 
     # ── Step 6: Send done event ───────────────────────────────────────────────
-    yield f"data: {DoneEvent(sources=[], message_count=final_message_count).model_dump_json()}\n\n"
+    # Deduplicate sources based on response_id
+    seen_ids = set()
+    unique_sources = []
+    for s in final_sources:
+        if s.get("response_id") and s["response_id"] not in seen_ids:
+            seen_ids.add(s["response_id"])
+            unique_sources.append(s)
+
+    yield f"data: {DoneEvent(sources=unique_sources, message_count=final_message_count).model_dump_json()}\n\n"

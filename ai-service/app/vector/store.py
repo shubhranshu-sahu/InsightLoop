@@ -108,6 +108,37 @@ def get_vector_store() -> VectorStore:
             url=settings.QDRANT_URL,
             api_key=settings.QDRANT_API_KEY,
         )
+        
+        # ── BUG FIX: Qdrant Payload Index Creation ────────────────────────────
+        # Qdrant requires a payload index of type 'keyword' for any field used
+        # in exact-match filtering (like business_id and form_id). We ensure the
+        # collection exists and create the indexes here.
+        from qdrant_client.http.models import VectorParams, Distance, PayloadSchemaType
+        try:
+            if not client.collection_exists(settings.QDRANT_COLLECTION_NAME):
+                # Gemini embedding vectors are 768 dimensions
+                client.create_collection(
+                    collection_name=settings.QDRANT_COLLECTION_NAME,
+                    vectors_config=VectorParams(size=768, distance=Distance.COSINE)
+                )
+            
+            # CRITICAL: LangChain's QdrantVectorStore nests all metadata
+            # under a 'metadata' sub-key in the Qdrant payload.
+            # Payload structure: {"page_content": "...", "metadata": {"business_id": ..., "form_id": ...}}
+            # So the indexed field path must be "metadata.business_id", NOT "business_id".
+            client.create_payload_index(
+                collection_name=settings.QDRANT_COLLECTION_NAME,
+                field_name="metadata.business_id",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+            client.create_payload_index(
+                collection_name=settings.QDRANT_COLLECTION_NAME,
+                field_name="metadata.form_id",
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+        except Exception as e:
+            print(f"[Qdrant] Warning: Failed to ensure payload indexes: {e}")
+
         _store = QdrantVectorStore(
             client=client,
             collection_name=settings.QDRANT_COLLECTION_NAME,
@@ -142,7 +173,7 @@ def search_with_sources(
     business_id: str,
     form_id: str,
     k: int = 8,
-    min_score: float = 0.5,
+    min_score: float = 0.3,
 ) -> list[SearchResult]:
     """
     Perform a filtered semantic similarity search scoped to one business + form.
@@ -183,14 +214,32 @@ def search_with_sources(
         ]
     """
     store = get_vector_store()
+    
+    # ── BUG FIX: Qdrant Filter Validation ─────────────────────────────────────
+    # Qdrant client >= 1.10 rejects raw dictionaries for filtering.
+    search_filter = None
+    if settings.VECTOR_STORE_BACKEND.lower() == "qdrant":
+        from qdrant_client.http import models as rest
+        # CRITICAL: LangChain's QdrantVectorStore nests metadata under a 'metadata' sub-key.
+        # The payload structure is: {"page_content": "...", "metadata": {"business_id": ..., "form_id": ...}}
+        # We must filter on "metadata.business_id" NOT "business_id" at the top level.
+        search_filter = rest.Filter(
+            must=[
+                rest.FieldCondition(key="metadata.business_id", match=rest.MatchValue(value=business_id)),
+                rest.FieldCondition(key="metadata.form_id", match=rest.MatchValue(value=form_id)),
+            ]
+        )
+    else:
+        # ChromaDB still uses dictionary filters
+        search_filter = {
+            "business_id": business_id,
+            "form_id": form_id,
+        }
 
     raw_results = store.similarity_search_with_relevance_scores(
         query=query,
         k=k,
-        filter={
-            "business_id": business_id,
-            "form_id": form_id,
-        },
+        filter=search_filter,
     )
 
     return [

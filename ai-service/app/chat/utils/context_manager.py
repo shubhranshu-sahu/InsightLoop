@@ -185,10 +185,23 @@ async def run_summarization(
     """
     messages = thread_doc.get("messages", [])
 
-    # Determine how many to trim (oldest half of CONTEXT_WINDOW_SIZE)
+    # We summarize the OLDEST messages for LLM context compression, but we
+    # NEVER physically trim the messages array from MongoDB. The messages array
+    # is the source of truth for frontend chat history display (GET /chat/thread).
+    # The LLM context window is already handled in build_context_messages() via
+    # raw_messages[-CONTEXT_WINDOW_SIZE:] — no trimming needed here.
+    #
+    # For summarization: only process the oldest CONTEXT_WINDOW_SIZE//2 messages
+    # to build the summary text. Return the full original messages list unchanged.
     trim_count = max(settings.CONTEXT_WINDOW_SIZE // 2, 5)
+    
+    # Guard: only summarize if we have enough messages to make it worthwhile
+    if len(messages) <= trim_count:
+        return thread_doc.get("context_summary", ""), messages
+    
     messages_to_summarize = messages[:trim_count]
-    remaining_messages    = messages[trim_count:]
+    # remaining_messages is the FULL list — we return it untouched
+    remaining_messages = messages
 
     if not messages_to_summarize:
         # Nothing to summarize — return unchanged

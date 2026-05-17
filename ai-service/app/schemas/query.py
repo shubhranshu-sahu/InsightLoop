@@ -29,19 +29,25 @@ class Source(BaseModel):
     """
     A retrieved feedback response used as a citation.
 
-    Phase 1: Sources are always empty ([]).
-    Phase 2: RAG populates this — each source links back to a specific MongoDB
-             response document so the business owner can drill into the original.
+    Stored in MongoDB chat_threads.messages[].sources as a plain dict.
+    Fields come from Qdrant document metadata (set during embed_store_node).
 
-    Fields:
-        response_id:  UUID of the original responses document.
-        submitted_at: ISO 8601 string — shown in the citation chip in the UI.
-        snippet:      Short excerpt — the most relevant part of that response.
+    All fields except response_id are optional because:
+    - Old documents stored before RAG was enabled have fewer fields.
+    - _parse_messages uses Source(**s) so it must tolerate missing fields.
     """
 
-    response_id:  str = Field(..., description="UUID of the MongoDB responses document.")
-    submitted_at: str = Field(..., description="ISO 8601 timestamp of the original response.")
-    snippet:      str = Field(..., description="Relevant excerpt from the feedback text.")
+    model_config = {"extra": "ignore"}  # Silently drop unknown fields like _id, _collection_name
+
+    response_id:       str  = Field(...,  description="UUID of the MongoDB responses document.")
+    submitted_at:      str  = Field("",   description="ISO 8601 timestamp of the original response.")
+    snippet:           str  = Field("",   description="Relevant excerpt from the feedback text (populated by frontend or future update).")
+    overall_sentiment: str  = Field("",   description="positive | neutral | negative")
+    urgency:           str  = Field("",   description="low | medium | high")
+    dominant_topic:    str  = Field("",   description="Main topic detected in this feedback.")
+    is_complaint:      str  = Field("",   description="'true' or 'false' string.")
+    form_id:           str  = Field("",   description="Form this response belongs to.")
+    business_id:       str  = Field("",   description="Business this response belongs to.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
