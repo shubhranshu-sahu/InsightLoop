@@ -359,10 +359,41 @@ function appendSources(sources, container) {
   sources.forEach((s, idx) => {
     const chip = document.createElement('button');
     chip.className = 'source-citation';
-    chip.setAttribute('aria-label', `View source ${idx + 1}: ${s.dominant_topic || 'feedback'}`);
+    chip.setAttribute('aria-label', `View source ${idx + 1}`);
     chip.innerHTML = `<i data-lucide="file-text" style="width:12px;height:12px;"></i> Source ${idx + 1}`;
 
-    chip.addEventListener('click', () => openSourceModal(s, idx + 1));
+    let hoverTimer = null;
+    let isPinned = false;
+
+    // Hover to peek (300ms delay so quick pass-overs don't flash)
+    chip.addEventListener('mouseenter', () => {
+      hoverTimer = setTimeout(() => {
+        if (!isPinned) openSourceModal(s, idx + 1, false);
+      }, 300);
+    });
+
+    chip.addEventListener('mouseleave', () => {
+      clearTimeout(hoverTimer);
+      // Only close if not pinned by click
+      if (!isPinned) closeSourceModal();
+    });
+
+    // Click to pin / unpin
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearTimeout(hoverTimer);
+      if (isPinned) {
+        isPinned = false;
+        closeSourceModal();
+      } else {
+        isPinned = true;
+        openSourceModal(s, idx + 1, true);
+      }
+      // Reset pin state when modal is closed externally
+      const overlay = document.getElementById('sourceModalOverlay');
+      overlay._onClose = () => { isPinned = false; };
+    });
+
     chipsRow.appendChild(chip);
   });
 
@@ -373,82 +404,138 @@ function appendSources(sources, container) {
 
 // ── Source Citation Modal ─────────────────────────────────────────────────────
 
-function openSourceModal(source, idx) {
-  const overlay  = document.getElementById('sourceModalOverlay');
-  const badge    = document.getElementById('sourceModalBadge');
-  const metaEl   = document.getElementById('sourceModalMeta');
-  const snippetEl = document.getElementById('sourceModalSnippet');
+async function openSourceModal(source, idx, pinned) {
+  const overlay    = document.getElementById('sourceModalOverlay');
+  const badge      = document.getElementById('sourceModalBadge');
+  const metaEl     = document.getElementById('sourceModalMeta');
+  const snippetEl  = document.getElementById('sourceModalSnippet');
   const analysisEl = document.getElementById('sourceModalAnalysis');
+  const pinIcon    = document.getElementById('sourceModalPinIcon');
 
-  // Header badge
-  badge.textContent = `Source ${idx} · ${source.dominant_topic || 'Feedback'}`;
+  // Mark pinned state visually
+  overlay.dataset.pinned = pinned ? '1' : '0';
+  if (pinIcon) pinIcon.style.opacity = pinned ? '1' : '0';
 
-  // ── Meta pills ──────────────────────────────────────────────────────────────
-  const sentiment = (source.overall_sentiment || '').toLowerCase();
-  const urgency   = (source.urgency || '').toLowerCase();
-  const topic     = source.dominant_topic || '';
+  // Badge
+  badge.textContent = `Source ${idx}${source.dominant_topic ? ' · ' + source.dominant_topic : ''}`;
+
+  // Meta pills
+  const sentiment  = (source.overall_sentiment || '').toLowerCase();
+  const urgency    = (source.urgency || '').toLowerCase();
+  const topic      = source.dominant_topic || '';
   const isComplaint = source.is_complaint === 'true' || source.is_complaint === true;
-
-  // Format date nicely
   let dateStr = '—';
   if (source.submitted_at) {
-    try { dateStr = new Date(source.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
-    catch (_) { dateStr = source.submitted_at.slice(0, 10); }
+    try { dateStr = new Date(source.submitted_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
+    catch(_) { dateStr = source.submitted_at.slice(0, 10); }
   }
-
-  const sentimentIcon = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
-  const urgencyIcon   = urgency === 'high' ? '🔴' : urgency === 'medium' ? '🟡' : '🟢';
+  const si = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
+  const ui = urgency === 'high' ? '🔴' : urgency === 'medium' ? '🟡' : '🟢';
 
   metaEl.innerHTML = `
-    <span class="meta-pill sentiment-${sentiment}">${sentimentIcon} ${sentiment || 'unknown'}</span>
-    <span class="meta-pill urgency-${urgency}">${urgencyIcon} ${urgency || 'unknown'} urgency</span>
+    <span class="meta-pill sentiment-${sentiment}">${si} ${sentiment || 'unknown'}</span>
+    <span class="meta-pill urgency-${urgency}">${ui} ${urgency || 'unknown'} urgency</span>
     ${topic ? `<span class="meta-pill topic">🏷 ${topic}</span>` : ''}
     ${isComplaint ? `<span class="meta-pill complaint">⚠ Complaint</span>` : ''}
     <span class="meta-pill date">📅 ${dateStr}</span>
   `;
 
-  // ── Snippet ─────────────────────────────────────────────────────────────────
-  if (source.snippet && source.snippet.trim()) {
-    snippetEl.textContent = source.snippet;
+  // Show skeleton while fetching
+  snippetEl.innerHTML = '<span class="skeleton-line"></span><span class="skeleton-line short"></span>';
+  snippetEl.classList.remove('no-snippet');
+  analysisEl.innerHTML = '<div class="analysis-loading">Loading analysis…</div>';
+
+  overlay.classList.add('open');
+  if (window.lucide) window.lucide.createIcons();
+  document.addEventListener('keydown', handleModalKeydown);
+
+  // Fetch real response data
+  if (source.response_id) {
+    try {
+      const data = await apiFetch(`/api/responses/${source.response_id}`);
+      renderModalContent(data, snippetEl, analysisEl);
+    } catch (err) {
+      // Fallback to snippet from source metadata
+      if (source.snippet && source.snippet.trim()) {
+        snippetEl.textContent = source.snippet;
+      } else {
+        snippetEl.textContent = 'Could not load full feedback text.';
+        snippetEl.classList.add('no-snippet');
+      }
+      renderAnalysisCards(source, analysisEl);
+    }
+  } else {
+    snippetEl.textContent = 'No response ID available.';
+    snippetEl.classList.add('no-snippet');
+    renderAnalysisCards(source, analysisEl);
+  }
+}
+
+function renderModalContent(data, snippetEl, analysisEl) {
+  // Extract free-text answers from the response
+  const answers = data.answers || {};
+  const textAnswers = Object.values(answers)
+    .filter(a => a.type === 'text' && a.value && a.value.trim())
+    .map(a => `<p><em>${a.label}:</em><br>${a.value}</p>`)
+    .join('');
+
+  if (textAnswers) {
+    snippetEl.innerHTML = textAnswers;
     snippetEl.classList.remove('no-snippet');
   } else {
-    snippetEl.textContent = 'Full text not available. The AI used this response in its analysis based on semantic matching.';
+    snippetEl.textContent = 'No written feedback in this response.';
     snippetEl.classList.add('no-snippet');
   }
 
-  // ── Analysis grid ────────────────────────────────────────────────────────────
-  const responseLink = source.response_id
-    ? `<a href="#" style="color:var(--primary-light);font-size:0.75rem;word-break:break-all;" title="Response ID">${source.response_id.slice(0, 8)}…</a>`
-    : '—';
+  // AI analysis from the real document
+  const ai = data.ai_analysis || {};
+  const si = (ai.overall_sentiment||'') === 'positive' ? '😊' : (ai.overall_sentiment||'') === 'negative' ? '😞' : '😐';
+  const ui = (ai.urgency||'') === 'high' ? '🔴' : (ai.urgency||'') === 'medium' ? '🟡' : '🟢';
+
+  const ratingAnswers = Object.values(answers)
+    .filter(a => a.type === 'rating')
+    .map(a => `<div class="analysis-card"><div class="analysis-card-label">${a.label}</div><div class="analysis-card-value">${'★'.repeat(a.value)}${'☆'.repeat(5 - a.value)}</div></div>`)
+    .join('');
 
   analysisEl.innerHTML = `
     <div class="analysis-card">
       <div class="analysis-card-label">Sentiment</div>
-      <div class="analysis-card-value">${sentimentIcon} ${sentiment || '—'}</div>
+      <div class="analysis-card-value">${si} ${ai.overall_sentiment || '—'}</div>
     </div>
     <div class="analysis-card">
       <div class="analysis-card-label">Urgency</div>
-      <div class="analysis-card-value">${urgencyIcon} ${urgency || '—'}</div>
+      <div class="analysis-card-value">${ui} ${ai.urgency || '—'}</div>
     </div>
     <div class="analysis-card">
       <div class="analysis-card-label">Topic</div>
-      <div class="analysis-card-value">${topic || '—'}</div>
+      <div class="analysis-card-value">${ai.dominant_topic || '—'}</div>
     </div>
     <div class="analysis-card">
       <div class="analysis-card-label">Complaint</div>
-      <div class="analysis-card-value">${isComplaint ? '⚠ Yes' : '✓ No'}</div>
+      <div class="analysis-card-value">${ai.is_complaint ? '⚠ Yes' : '✓ No'}</div>
     </div>
+    ${ratingAnswers}
   `;
+}
 
-  // Open the modal
-  overlay.classList.add('open');
-  if (window.lucide) window.lucide.createIcons();
-  document.addEventListener('keydown', handleModalKeydown);
+function renderAnalysisCards(source, analysisEl) {
+  const si = (source.overall_sentiment||'') === 'positive' ? '😊' : (source.overall_sentiment||'') === 'negative' ? '😞' : '😐';
+  const ui = (source.urgency||'') === 'high' ? '🔴' : (source.urgency||'') === 'medium' ? '🟡' : '🟢';
+  const isComplaint = source.is_complaint === 'true' || source.is_complaint === true;
+  analysisEl.innerHTML = `
+    <div class="analysis-card"><div class="analysis-card-label">Sentiment</div><div class="analysis-card-value">${si} ${source.overall_sentiment || '—'}</div></div>
+    <div class="analysis-card"><div class="analysis-card-label">Urgency</div><div class="analysis-card-value">${ui} ${source.urgency || '—'}</div></div>
+    <div class="analysis-card"><div class="analysis-card-label">Topic</div><div class="analysis-card-value">${source.dominant_topic || '—'}</div></div>
+    <div class="analysis-card"><div class="analysis-card-label">Complaint</div><div class="analysis-card-value">${isComplaint ? '⚠ Yes' : '✓ No'}</div></div>
+  `;
 }
 
 function closeSourceModal() {
   const overlay = document.getElementById('sourceModalOverlay');
+  if (!overlay) return;
+  if (overlay._onClose) { overlay._onClose(); overlay._onClose = null; }
   overlay.classList.remove('open');
+  overlay.dataset.pinned = '0';
   document.removeEventListener('keydown', handleModalKeydown);
 }
 
@@ -456,14 +543,12 @@ function handleModalKeydown(e) {
   if (e.key === 'Escape') closeSourceModal();
 }
 
-// Wire up close button and overlay-click-to-close
 document.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('sourceModalOverlay');
   const closeBtn = document.getElementById('sourceModalClose');
-
   if (closeBtn) closeBtn.addEventListener('click', closeSourceModal);
+  // Click overlay backdrop only closes if pinned (hover-mode closes on mouseleave)
   if (overlay) overlay.addEventListener('click', (e) => {
-    // Only close when clicking the dark overlay itself, not the modal card
     if (e.target === overlay) closeSourceModal();
   });
 });
@@ -472,3 +557,4 @@ function scrollToBottom() {
   const container = document.getElementById('chatMessages');
   container.scrollTop = container.scrollHeight;
 }
+

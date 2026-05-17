@@ -87,13 +87,16 @@
   </main>
 
   <!-- Source Citation Modal -->
-  <div class="source-modal-overlay" id="sourceModalOverlay" role="dialog" aria-modal="true" aria-labelledby="sourceModalTitle">
+  <div class="source-modal-overlay" id="sourceModalOverlay" role="dialog" aria-modal="true" aria-labelledby="sourceModalBadge">
     <div class="source-modal">
       <div class="source-modal-header">
         <div class="source-modal-badge" id="sourceModalBadge">Source 1</div>
-        <button class="source-modal-close" id="sourceModalClose" aria-label="Close">
-          <i data-lucide="x"></i>
-        </button>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <span id="sourceModalPinIcon" title="Pinned — click source chip again to unpin" style="opacity:0;font-size:0.75rem;color:var(--primary-light);transition:opacity 0.2s;">📌 Pinned</span>
+          <button class="source-modal-close" id="sourceModalClose" aria-label="Close">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
       </div>
 
       <div class="source-modal-meta" id="sourceModalMeta">
