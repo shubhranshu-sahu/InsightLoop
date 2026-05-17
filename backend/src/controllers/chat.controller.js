@@ -16,13 +16,23 @@ const getOrCreateThread = async (req, res, next) => {
       return res.status(400).json({ error: 'form_id is required.' });
     }
 
-    // Fetch form_title from MySQL
+    // 1. Fetch form_title and its owner from MySQL
     const pool = getPool();
     const [rows] = await pool.query(
-      'SELECT title FROM feedback_forms WHERE form_id = ?',
+      'SELECT title, business_id FROM feedback_forms WHERE form_id = ?',
       [form_id]
     );
-    const form_title = rows.length ? rows[0].title : 'Unknown Form';
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Form not found.' });
+    }
+
+    // 2. CRITICAL FIX: Ensure the form belongs to the logged-in business
+    if (rows[0].business_id !== business_id) {
+      return res.status(403).json({ error: 'Unauthorized: Form does not belong to this business.' });
+    }
+
+    const form_title = rows[0].title;
 
     // Call FastAPI to get or create thread
     const fastApiResponse = await axios.post(

@@ -257,13 +257,16 @@ const getSentimentTrend = async (req, res, next) => {
     const startDate = new Date(Date.now() - validDays * 24 * 60 * 60 * 1000);
 
     // MongoDB aggregation — group by date + sentiment
+    const match = {
+      business_id: businessId,
+      'ai_analysis.status': 'done',
+      submitted_at: { $gte: startDate },
+    };
+    if (req.query.form_id) match.form_id = req.query.form_id;
+
     const rawResult = await Response.aggregate([
       {
-        $match: {
-          business_id: businessId,
-          'ai_analysis.status': 'done',
-          submitted_at: { $gte: startDate },
-        },
+        $match: match,
       },
       {
         $group: {
@@ -494,7 +497,7 @@ const getFormAnalytics = async (req, res, next) => {
     }
 
     // MongoDB aggregations
-    const [totalResponses, sentimentBreakdown, urgencyBreakdown, complaintCount] = await Promise.all([
+    const [totalResponses, sentimentAgg, urgencyAgg, complaintCount, topTopicsAgg, allResponses] = await Promise.all([
       Response.countDocuments({ form_id: formId }),
 
       Response.aggregate([
@@ -508,14 +511,66 @@ const getFormAnalytics = async (req, res, next) => {
       ]),
 
       Response.countDocuments({ form_id: formId, 'ai_analysis.is_complaint': true }),
+
+      // Top topics aggregation
+      Response.aggregate([
+        { $match: { form_id: formId, 'ai_analysis.status': 'done', 'ai_analysis.dominant_topic': { $exists: true, $ne: null } } },
+        { $group: { _id: '$ai_analysis.dominant_topic', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+      ]),
+
+      // Fetch all responses for rating_distribution calculation
+      Response.find({ form_id: formId }).select('answers').lean(),
     ]);
+
+    // Convert sentiment_breakdown from array to object map
+    const sentiment_breakdown = { positive: 0, neutral: 0, negative: 0 };
+    sentimentAgg.forEach(({ _id, count }) => {
+      if (_id && sentiment_breakdown.hasOwnProperty(_id)) {
+        sentiment_breakdown[_id] = count;
+      }
+    });
+
+    // Convert urgency_breakdown from array to object map
+    const urgency_breakdown = { low: 0, medium: 0, high: 0 };
+    urgencyAgg.forEach(({ _id, count }) => {
+      if (_id && urgency_breakdown.hasOwnProperty(_id)) {
+        urgency_breakdown[_id] = count;
+      }
+    });
+
+    // Build top_topics array
+    const top_topics = topTopicsAgg.map(({ _id, count }) => ({ topic: _id, count }));
+
+    // Build rating_distribution from answers where type === 'rating'
+    const rating_distribution = {};
+    allResponses.forEach((doc) => {
+      if (!doc.answers) return;
+      Object.values(doc.answers).forEach((answer) => {
+        if (answer.type === 'rating' && answer.label && answer.value != null) {
+          const label = answer.label;
+          if (!rating_distribution[label]) {
+            rating_distribution[label] = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+          }
+          const ratingKey = String(answer.value);
+          if (rating_distribution[label].hasOwnProperty(ratingKey)) {
+            rating_distribution[label][ratingKey]++;
+          }
+        }
+      });
+    });
 
     res.json({
       form_id: formId,
-      total_responses: totalResponses,
-      sentiment_breakdown: sentimentBreakdown,
-      urgency_breakdown: urgencyBreakdown,
-      complaint_count: complaintCount,
+      stats: {
+        total_responses: totalResponses,
+        complaint_count: complaintCount,
+      },
+      sentiment_breakdown,
+      urgency_breakdown,
+      top_topics,
+      rating_distribution,
     });
   } catch (error) {
     next(error);
